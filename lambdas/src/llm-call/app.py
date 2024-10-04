@@ -218,11 +218,6 @@ class LlmResponse:
     parameter: LlmParam = None
     response: str = ""
 
-
-# contactId = get_contact_id(event)
-# res = insert_llm_history(contactId, input_query, response, instruction)
-
-
 # @todo : Context 구현하기
 def llmCall(param: LlmParam) -> LlmResponse:
     human = get_human_template()

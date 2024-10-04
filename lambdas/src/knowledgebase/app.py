@@ -158,7 +158,7 @@ def setContactIdToLlmHistory(historyKey: str, contactId: str):
     if contactId == "":
         return {"error": "contactId is required"}
 
-    table = 'llm_history'
+    table = get_ddb_llm_history()
     ddbResource = boto3.resource('dynamodb')
     res = ddbResource.Table(table).get_item(
         Key={
@@ -194,7 +194,7 @@ def insert_llm_history(contactId: str, query: str, answer: str, instruction: str
         answerDate = datetime.utcnow()
 
     ddbResource = boto3.resource('dynamodb')
-    table = 'llm_history'
+    table = get_ddb_llm_history()
     lq = {
         'Id': str(uuid.uuid4()),
         'ContactId': contactId.strip(),
@@ -265,6 +265,14 @@ def get_region_cache_endpoint():
 
 def get_knowledge_base_id():
     return get_param('/aaa/knowledge-base-id')
+
+
+def get_ddb_llm_history():
+    return get_param('/aaa/dynamodb_llm_history')
+
+
+def get_ddb_contact_summary():
+    return get_param('/aaa/dynamodb_contact_summary')
 
 
 def ssl_from_redis_uri(uri):

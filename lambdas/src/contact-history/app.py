@@ -74,7 +74,7 @@ def contact_info(contactId: str):
 @app.get("/contact-history/llm_history/<contactId>/list")
 def get_contact_llm_history(contactId: str):
     client = boto3.resource('dynamodb')
-    tableName = 'llm_history'
+    tableName = get_ddb_llm_history()
     table = client.Table(tableName)
 
     response = table.query(
@@ -276,7 +276,7 @@ def insert_llm_history(contactId: str, query: str, answer: str, instruction: str
         answerDate = datetime.datetime.utcnow()
 
     ddbResource = boto3.resource('dynamodb')
-    table = 'llm_history'
+    table = get_ddb_llm_history()
     lq = {
         'Id': str(uuid.uuid4()),
         'ContactId': contactId.strip(),
@@ -400,10 +400,6 @@ class LlmParam:
 class LlmResponse:
     parameter: LlmParam = None
     response: str = ""
-
-
-# contactId = get_contact_id(event)
-# res = insert_llm_history(contactId, input_query, response, instruction)
 
 
 # @todo : Context 구현하기
@@ -598,6 +594,15 @@ def get_region_cache_enabled():
     return ps_get_bool('/aaa/region_cache_enabled')
 
 
+def get_ddb_llm_history():
+    return get_param('/aaa/dynamodb_llm_history')
+
+
+def get_ddb_contact_summary():
+    return get_param('/aaa/dynamodb_contact_summary')
+
+
+
 def get_chain(model, prompt, retriever):
     chain = (
             {"context": retriever, "question": RunnablePassthrough()}
@@ -739,7 +744,7 @@ def insert_llm_history(contactId: str, query: str, answer: str, instruction: str
         answerDate = datetime.datetime.utcnow()
 
     ddbResource = boto3.resource('dynamodb')
-    table = 'llm_history'
+    table = get_ddb_llm_history()
     lq = {
         'Id': str(uuid.uuid4()),
         'ContactId': contactId.strip(),

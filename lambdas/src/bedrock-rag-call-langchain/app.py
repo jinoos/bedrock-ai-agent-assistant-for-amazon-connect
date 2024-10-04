@@ -139,6 +139,14 @@ def get_region_cache_key():
     return get_param('/aaa/region_cache_key')
 
 
+def get_ddb_llm_history():
+    return get_param('/aaa/dynamodb_llm_history')
+
+
+def get_ddb_contact_summary():
+    return get_param('/aaa/dynamodb_contact_summary')
+
+
 def get_hash(input_string):
     encoded_str = input_string.encode()
     sha256 = hashlib.sha256()
@@ -421,7 +429,7 @@ def insert_llm_history(contactId: str, query: str, answer: str, instruction: str
         answerDate = datetime.datetime.utcnow()
 
     ddbResource = boto3.resource('dynamodb')
-    table = 'llm_history'
+    table = get_ddb_llm_history()
     lq = {
         'Id': str(uuid.uuid4()),
         'ContactId': contactId.strip(),
