@@ -224,10 +224,6 @@ def llmCall(param: LlmParam) -> LlmResponse:
     prompt = get_prompt(human, param.instruction)
     bedrock_runtime = get_bedrock_runtime()
 
-    # if get_semantic_cache_enabled():
-    #     print(f"Semantic Cache enabled")
-    #     enable_semantic_cache(bedrock_runtime)
-
     retriever = get_bedrock_kb_retriever()
     retriever.get_relevant_documents(param.query)
     model = get_bedrock_model(bedrock_runtime)
@@ -260,7 +256,7 @@ def llmCall(param: LlmParam) -> LlmResponse:
 
 def removeLlmSummary(contactId: str):
     client = boto3.resource('dynamodb')
-    tableName = 'llm_summary'
+    tableName = get_ddb_contact_summary()
     table = client.Table(tableName)
     response = table.delete_item(Key={'ContactId': contactId})
     print(f"LLM Summary deleted by contactId:{contactId}")
@@ -269,7 +265,7 @@ def removeLlmSummary(contactId: str):
 
 def getLlmSummaryDb(contactId: str) -> Optional[dict]:
     client = boto3.resource('dynamodb')
-    tableName = 'llm_summary'
+    tableName = get_ddb_contact_summary()
     table = client.Table(tableName)
     response = table.get_item(Key={'ContactId': contactId})
     print(f"LLM Summary DB response: {response}")
@@ -294,7 +290,7 @@ def insertLlmSummaryDb(contactId: str, query: str, answer: str, instruction: str
         answerDate = datetime.datetime.utcnow()
 
     ddbResource = boto3.resource('dynamodb')
-    table = 'llm_summary'
+    table = get_ddb_contact_summary()
     lq = {
         'ContactId': contactId.strip(),
         'Query': query.strip(),
@@ -349,9 +345,9 @@ def exportLlmSummaryToS3(contactId: str):
 
 
 
-def getLlmHistory(contactId: str, indexForward: bool = True):
+def getLlmHistory(contactId: str):
     client = boto3.resource('dynamodb')
-    tableName = 'llm_history'
+    tableName = get_ddb_llm_history()
     table = client.Table(tableName)
 
     response = table.query(
@@ -378,7 +374,7 @@ def insertLlmHistory(contactId: str, query: str, answer: str, instruction: str =
         answerDate = datetime.datetime.utcnow()
 
     ddbResource = boto3.resource('dynamodb')
-    table = 'llm_history'
+    table = get_ddb_llm_history()
     lq = {
         'Id': str(uuid.uuid4()),
         'ContactId': contactId.strip(),
@@ -544,6 +540,14 @@ def get_semantic_cache_endpoint():
 
 def get_region_cache_enabled():
     return ps_get_bool('/aaa/region_cache_enabled')
+
+
+def get_ddb_llm_history():
+    return ps_get('/aaa/dynamodb_llm_history')
+
+
+def get_ddb_contact_summary():
+    return ps_get('/aaa/dynamodb_contact_summary')
 
 
 def get_chain(model, prompt, retriever):

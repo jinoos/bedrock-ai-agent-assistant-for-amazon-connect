@@ -1,7 +1,6 @@
 import logging
 import uuid
 import datetime
-from typing import Dict, Any, Optional, List
 
 from langchain_community.cache import OpenSearchSemanticCache
 
@@ -12,10 +11,6 @@ import json
 import pickle
 import hashlib
 
-from langchain_core.caches import BaseCache, RETURN_VAL_TYPE
-from langchain_core.embeddings import Embeddings
-from langchain_core.load import loads, dumps
-from langchain_core.outputs import Generation
 from opensearchpy import AWSV4SignerAsyncAuth
 from redis import Redis
 
@@ -23,9 +18,6 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.globals import set_llm_cache
-from langchain_community.vectorstores import (
-    OpenSearchVectorSearch as OpenSearchVectorStore,
-)
 from langchain_community.embeddings import BedrockEmbeddings
 
 from langchain_aws import ChatBedrock
