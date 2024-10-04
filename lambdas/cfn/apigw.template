@@ -1,0 +1,652 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Api Gateway for Lambdas
+
+Parameters:
+  LlmCallFunctionArn:
+    Type: String
+    Description: LlmCall Lambda Function ARN
+    Default: LlmCallFunctionArn
+  KnowledgeBaseFunctionArn:
+    Type: String
+    Description: KnowledgeBase Lambda Function ARN
+    Default: KnowledgeBaseFunctionArn
+  ContactHistoryFunctionArn:
+    Type: String
+    Description: ContactHistory Lambda Function ARN
+    Default: ContactHistoryFunctionArn
+  BedrockRagCallLangchainFunctionArn:
+    Type: String
+    Description: BedrockRagCallLangchainFunctionArn Lambda Function ARN
+    Default: BedrockRagCallLangchainFunctionArn
+
+Resources:
+  ApiGatewayRestApi:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: !Sub
+        - "aaa-apigw-${stackId}"
+        - stackId: !Select [ 4, !Split [ '-', !Select [ 2, !Split [ '/', !Ref AWS::StackId ] ] ] ]
+      ApiKeySourceType: "HEADER"
+      EndpointConfiguration:
+        Types:
+          - "REGIONAL"
+
+  ApiGatewayStageProd:
+    Type: "AWS::ApiGateway::Stage"
+    Properties:
+      StageName: "prod"
+      DeploymentId: !Ref ApiGatewayDeployment
+      RestApiId: !Ref ApiGatewayRestApi
+      CacheClusterEnabled: false
+      CacheClusterSize: "0.5"
+      TracingEnabled: false
+
+  ApiGatewayDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayModelEmpty:
+    Type: "AWS::ApiGateway::Model"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      Name: "Empty"
+      Description: "This is a default empty schema model"
+      Schema: |
+        {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "title" : "Empty Schema",
+          "type" : "object"
+        }
+      ContentType: "application/json"
+
+  ApiGatewayModelError:
+    Type: "AWS::ApiGateway::Model"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      Name: "Error"
+      Description: "This is a default error schema model"
+      Schema: |
+        {
+          "$schema" : "http://json-schema.org/draft-04/schema#",
+          "title" : "Error Schema",
+          "type" : "object",
+          "properties" : {
+            "message" : { "type" : "string" }
+          }
+        }
+      ContentType: "application/json"
+
+  MethodChatbotOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceChatbot
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceChatbot
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  MethodLlmCallProxyAny:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceLlmCallProxy
+      HttpMethod: "ANY"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters:
+        "method.request.path.proxy": true
+      Integration:
+        CacheNamespace: !Ref ResourceLlmCallProxy
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        TimeoutInMillis: 29000
+        Type: "AWS_PROXY"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LlmCallFunctionArn}/invocations
+
+  MethodLlmCallGet:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceLlmCall
+      HttpMethod: "GET"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      RequestModels: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceLlmCall
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        TimeoutInMillis: 29000
+        Type: "AWS"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LlmCallFunctionArn}/invocations
+
+  MethodCHProxyOpions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceCHProxy
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceCHProxy
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  MethodKBAny:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceKB
+      HttpMethod: "ANY"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      RequestModels: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceKB
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_TEMPLATES"
+        TimeoutInMillis: 29000
+        Type: "AWS_PROXY"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${KnowledgeBaseFunctionArn}/invocations
+
+  MethodKBproxyOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceKBProxy
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceKBProxy
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  MethodCHOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceCH
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceCH
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  MethodLlmCallOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceLlmCall
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceLlmCall
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  MethodLlmCallProxyOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceLlmCallProxy
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceLlmCallProxy
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  ResourceLlmCallProxy:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "{proxy+}"
+      ParentId: !Ref ResourceLlmCall
+
+  MethodCHAny:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceCH
+      HttpMethod: "ANY"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      RequestModels: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceCH
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        TimeoutInMillis: 29000
+        Type: "AWS_PROXY"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ContactHistoryFunctionArn}/invocations
+
+  ResourceCH:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "contact-history"
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+
+  MethodCHProxyAny:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceCHProxy
+      HttpMethod: "ANY"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters:
+        "method.request.path.proxy": true
+      Integration:
+        CacheNamespace: !Ref ResourceCHProxy
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        TimeoutInMillis: 29000
+        Type: "AWS_PROXY"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ContactHistoryFunctionArn}/invocations
+
+  ResourceCHProxy:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "{proxy+}"
+      ParentId: !Ref ResourceCH
+
+  MethodChatbotProxyOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceChatbotProxy
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceChatbotProxy
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  MethodKBProxyAny:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceKBProxy
+      HttpMethod: "ANY"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters:
+        "method.request.path.proxy": true
+      Integration:
+        CacheNamespace: !Ref ResourceKBProxy
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_TEMPLATES"
+        RequestParameters:
+          "integration.request.path.proxy": "method.request.path.proxy"
+        TimeoutInMillis: 29000
+        Type: "AWS_PROXY"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${KnowledgeBaseFunctionArn}/invocations
+
+  ResourceKBProxy:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "{proxy+}"
+      ParentId: !Ref ResourceKB
+
+  MethodChatbotProxyAny:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceChatbotProxy
+      HttpMethod: "ANY"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters:
+        "method.request.path.proxy": true
+      Integration:
+        CacheNamespace: !Ref ResourceChatbotProxy
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_TEMPLATES"
+        RequestParameters:
+          "integration.request.path.proxy": "method.request.path.proxy"
+        TimeoutInMillis: 29000
+        Type: "AWS_PROXY"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BedrockRagCallLangchainFunctionArn}/invocations
+
+  ResourceChatbotProxy:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "{proxy+}"
+      ParentId: !Ref ResourceChatbot
+
+  ResourceLlmCall:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "llm-call"
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+
+  MethodLlmCallPost:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceLlmCall
+      HttpMethod: "POST"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      RequestModels: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceLlmCall
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        TimeoutInMillis: 29000
+        Type: "AWS"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LlmCallFunctionArn}/invocations
+
+  MethodChatbotAny:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceChatbot
+      HttpMethod: "ANY"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      RequestModels: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceChatbot
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_TEMPLATES"
+        TimeoutInMillis: 29000
+        Type: "AWS_PROXY"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BedrockRagCallLangchainFunctionArn}/invocations
+
+  ResourceChatbot:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "chatbot"
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+
+  ApiGatewayMethod20:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      RequestModels: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !GetAtt ApiGatewayRestApi.RootResourceId
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates: { }
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        TimeoutInMillis: 29000
+        Type: "AWS"
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LlmCallFunctionArn}/invocations
+
+  MethodKBOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: !Ref ResourceKB
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: { }
+      MethodResponses:
+        - ResponseModels:
+            "application/json": !Ref ApiGatewayModelEmpty
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": false
+            "method.response.header.Access-Control-Allow-Methods": false
+            "method.response.header.Access-Control-Allow-Origin": false
+          StatusCode: "200"
+      Integration:
+        CacheNamespace: !Ref ResourceKB
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates:
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  ResourceKB:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      PathPart: "knowledgebase"
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+
+
+Outputs:
+  ApiGatewayRestApi:
+    Value: !Ref ApiGatewayRestApi

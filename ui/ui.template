@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  Stacks for UI
+
+# ------------------------------------------------------------#
+# Parameters
+# ------------------------------------------------------------#
+Parameters:
+  BucketName:
+    Type: String
+    Default: "S3 Bucket Name"
+#
+#  ACMSSL:
+#    Type: String
+#    Default: "ACM Identifier"
+
+Resources:
+# ------------------------------------------------------------#
+#  S3 Bucket
+# ------------------------------------------------------------#
+# Bucket
+  Bucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: AiAgentAssistant
+  BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Statement:
+        - Action: "s3:GetObject"
+          Effect: Allow
+          Resource: !Sub "arn:aws:s3:::${Bucket}/*"
+          Principal:
+            CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+# ------------------------------------------------------------#
+#  CloudFront
+# ------------------------------------------------------------#
+  CloudFrontOriginAccessIdentity:
+    Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "access-identity-${Bucket}"
+  CloudFrontDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !GetAtt Bucket.RegionalDomainName
+          Id: !Sub "S3origin-${BucketName}"
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+        DefaultCacheBehavior:
+          TargetOriginId: !Sub "S3origin-${BucketName}"
+          ViewerProtocolPolicy: allow-all
+          AllowedMethods:
+          - GET
+          - HEAD
+          Compress: true
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+#        ViewerCertificate:
+#          SslSupportMethod: sni-only
+#          MinimumProtocolVersion: TLSv1.2_2021
+#          AcmCertificateArn: !Sub "arn:aws:acm:us-east-1:${AWS::AccountId}:certificate/${ACMSSL}"
+        HttpVersion: http2
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: AiAgentAssistant
+
+Outputs:
+  DistributionDomainName:
+    Description: "Domain name of the CloudFront distribution"
+    Value: !GetAtt CloudFrontDistribution.DomainName
+  Bucket:
+    Description: "Bucket Name"
+    Value: !Ref BucketName

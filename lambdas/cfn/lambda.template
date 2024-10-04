@@ -1,0 +1,161 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: Api Gateway for Lambdas
+
+Parameters:
+  LambdaSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private Subnets for Lambda Function
+  LambdaSGs:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Security Group for Lambda Function
+  DynamoDBLlmHistory:
+    Type: String
+    Description: DynamoDB table for LLM history
+  DynamoDBContactSummary:
+    Type: String
+    Description: DynamoDB table for contact summary
+
+Resources:
+  BedrockRagCallLangchainFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: bedrock-rag-call-langchain
+      CodeUri: ../src/bedrock-rag-call-langchain/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - arm64
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SecurityGroupIds: !Ref LambdaSGs
+        SubnetIds: !Ref LambdaSubnets
+  #  BedrockRagCallFunction:
+  #    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  #    Properties:
+  #      FunctionName: bedrock-rag-call
+  #      CodeUri: src/bedrock-rag-call/
+  #      Handler: app.lambda_handler
+  #      Runtime: python3.9
+  #      Architectures:
+  #        - arm64
+  #      Role: !Ref LambdaRoleArn
+  #      VpcConfig:
+  #        SecurityGroupIds: !Ref LambdaSGs
+  #        SubnetIds: !Ref LambdaSubnets
+  KnowledgeBaseFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: abp-knowledge-base
+      CodeUri: ../src/knowledgebase/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - arm64
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SecurityGroupIds: !Ref LambdaSGs
+        SubnetIds: !Ref LambdaSubnets
+  ContactHistoryFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: contact-history
+      CodeUri: ../src/contact-history/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - arm64
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SecurityGroupIds: !Ref LambdaSGs
+        SubnetIds: !Ref LambdaSubnets
+  LlmCallFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: llm-call
+      CodeUri: ../src/llm-call/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - arm64
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SecurityGroupIds: !Ref LambdaSGs
+        SubnetIds: !Ref LambdaSubnets
+
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: LambdaMultiServiceRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: LambdaMultiServicePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:ListBucket'
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                Resource:
+                  - 'arn:aws:s3:::your-bucket-name'
+                  - 'arn:aws:s3:::your-bucket-name/*'
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:DeleteItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:Scan'
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBLlmHistory}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBContactSummary}"
+              - Effect: Allow
+                Action:
+                  - 'bedrock:InvokeModel'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'bedrock:QueryKnowledgeBase'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'aoss:APIAccessAll'
+                  - 'aoss:DashboardsAccessAll'
+                Resource: 'arn:aws:aoss:*:*:collection/*'
+              - Effect: Allow
+                Action:
+                  - 'connect:*'
+                  - 'connect:GetContactAttributes'
+                  - 'connect:UpdateContactAttributes'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogStreams'
+                Resource: 'arn:aws:logs:*:*:*'
+
+Outputs:
+  BedrockRagCallLangchainFunction:
+    Value: !Ref BedrockRagCallLangchainFunction
+  KnowledgeBaseFunction:
+    Value: !Ref KnowledgeBaseFunction
+  ContactHistoryFunction:
+    Value: !Ref ContactHistoryFunction
+  LlmCallFunction:
+    Value: !Ref LlmCallFunction
+  LambdaExecutionRole:
+    Value: !Ref LambdaExecutionRole

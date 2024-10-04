@@ -1,0 +1,214 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Lambda & Api Gateway of AI Agent Assistant for Bedrock with Knowledge
+  Base
+
+  '
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Lambda & Api Gateway Settings
+      Parameters:
+      - LambdaSubnets
+      - LambdaSGs
+      - LambdaRoleArn
+    - Label:
+        default: LLM Settings
+      Parameters:
+      - BedrockRegion
+      - BedrockModelId
+      - BedrockModelIdSummary
+      - BedrockKnowledgeBaseId
+    - Label:
+        default: Semantic Cache Settings
+      Parameters:
+      - SemanticCacheEnable
+      - SemanticCacheEmbeddingModelId
+      - SemanticCacheVectorDBEndpoint
+    - Label:
+        default: DynamoDB Settings
+      Parameters:
+      - ApiGWName
+Parameters:
+  LambdaSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private Subnets for Lambda Function
+  LambdaSGs:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Security Group for Lambda Function
+  LambdaRoleArn:
+    Type: String
+    Description: Role ARN for Lambda Function
+  ApiGWName:
+    Type: String
+    Description: Name for Api Gateway
+    Default: ai-agent-assistant
+  BedrockRegion:
+    Type: String
+    Description: Bedrock Region
+    Default: us-west-2
+    AllowedValues:
+    - us-east-1
+    - us-east-2
+    - us-west-1
+    - us-west-2
+    - af-south-1
+    - ap-east-1
+    - ap-south-2
+    - ap-southeast-3
+    - ap-southeast-5
+    - ap-southeast-4
+    - ap-south-1
+    - ap-northeast-3
+    - ap-northeast-2
+    - ap-southeast-1
+    - ap-southeast-2
+    - ap-northeast-1
+    - ca-central-1
+    - ca-west-1
+    - cn-north-1
+    - cn-northwest-1
+    - eu-central-1
+    - eu-west-1
+    - eu-west-2
+    - eu-south-1
+    - eu-west-3
+    - eu-south-2
+    - eu-north-1
+    - eu-central-2
+    - il-central-1
+    - me-south-1
+    - me-central-1
+    - sa-east-1
+  BedrockModelId:
+    Type: String
+    Description: Bedrock Model Id (see https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html)
+    Default: anthropic.claude-3-haiku-20240307-v1:0
+  BedrockModelIdSummary:
+    Type: String
+    Description: Bedrock Model Id for Call Summary
+    Default: anthropic.claude-3-5-sonnet-20240620-v1:0
+  BedrockKnowledgeBaseId:
+    Type: String
+    Description: Bedrock Knowledge Base Id
+  SemanticCacheEnable:
+    Type: String
+    Description: Semantic Cache Enable (True/False)
+    Default: false
+    AllowedValues:
+    - true
+    - false
+  SemanticCacheEmbeddingModelId:
+    Type: String
+    Description: Semantic Cache Embedding Model Id
+    Default: amazon.titan-embed-text-v2:0
+  SemanticCacheVectorDBEndpoint:
+    Type: String
+    Description: Semantic Cache VectorDB Endpoint (only for OpenSearch Serverless
+      Endpoint)
+  DynamoDBLlmHistory:
+    Type: String
+    Description: DynamoDB Table for LLM History
+    Default: llm_history
+  DynamoDBContactSummary:
+    Type: String
+    Description: DynamoDB Table for Contact Summary
+    Default: contact_summary
+Globals:
+  Function:
+    Timeout: 20
+    MemorySize: 256
+Resources:
+  Lambda:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.ap-northeast-2.amazonaws.com/cf-template-009160053058/lambdas/1b278ca294b788c60f234ef0e2aa61b1.template
+      Parameters:
+        LambdaSubnets:
+          Ref: LambdaSubnets
+        LambdaSGs:
+          Ref: LambdaSGs
+        DynamoDBLlmHistory:
+          Fn::GetAtt:
+          - DDB
+          - Outputs.DDBLLMHistoryTable.TableName
+        DynamoDBContactSummary:
+          Fn::GetAtt:
+          - DDB
+          - Outputs.DDBContactSummaryTable.TableName
+  ApiGw:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.ap-northeast-2.amazonaws.com/cf-template-009160053058/lambdas/924c72056db4edd3e2e92e8cd9594a82.template
+      Parameters:
+        LlmCallFunctionArn:
+          Fn::GetAtt:
+          - Lambda
+          - Outputs.LlmCallFunction.Arn
+        KnowledgeBaseFunctionArn:
+          Fn::GetAtt:
+          - Lambda
+          - Outputs.KnowledgeBaseFunction.Arn
+        ContactHistoryFunctionArn:
+          Fn::GetAtt:
+          - Lambda
+          - Outputs.ContactHistoryFunction.Arn
+        BedrockRagCallLangchainFunctionArn:
+          Fn::GetAtt:
+          - Lambda
+          - Outputs.BedrockRagCallLangchainFunction.Arn
+  DDB:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.ap-northeast-2.amazonaws.com/cf-template-009160053058/lambdas/bebd7b6d511a2dcd3599a607b09326a8.template
+  SSM:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.ap-northeast-2.amazonaws.com/cf-template-009160053058/lambdas/0b11678bd9e355881ea1b1a97a403569.template
+      Parameters:
+        BedrockRegion:
+          Ref: BedrockRegion
+        BedrockModelId:
+          Ref: BedrockModelId
+        BedrockKnowledgeBaseId:
+          Ref: BedrockKnowledgeBaseId
+        SemanticCacheEnabled:
+          Ref: SemanticCacheEnable
+        SemanticCacheVectorDBEndpoint:
+          Ref: SemanticCacheVectorDBEndpoint
+        SemanticCacheEmbeddingModelId:
+          Ref: SemanticCacheEmbeddingModelId
+        DDBLLMHistoryTable:
+          Fn::GetAtt:
+          - DDB
+          - Outputs.DDBLLMHistoryTable
+        DDBContactSummaryTable:
+          Fn::GetAtt:
+          - DDB
+          - Outputs.DDBContactSummaryTable
+Outputs:
+  BedrockRagCallLangchainFunction:
+    Description: Bedrock Rag Call Langchain Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - Lambda
+      - Outputs.BedrockRagCallLangchainFunction.Arn
+  KnowledgeBaseFunction:
+    Description: Knowledge Base Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - Lambda
+      - Outputs.KnowledgeBaseFunction.Arn
+  ContactHistoryFunction:
+    Description: Contact History Management Function ARN
+    Value:
+      Fn::GetAtt:
+      - Lambda
+      - Outputs.ContactHistoryFunction.Arn
+  LlmCallFunction:
+    Description: Contact History Management Function ARN
+    Value:
+      Fn::GetAtt:
+      - Lambda
+      - Outputs.LlmCallFunction.Arn

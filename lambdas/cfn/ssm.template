@@ -1,0 +1,240 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Systems Manager Parameters
+
+Parameters:
+  BedrockRegion:
+    Type: String
+    Description: Bedrock Region (eg, us-west-2)
+    Default: us-west-2
+  BedrockModelId:
+    Type: String
+    Description: Bedrock Model Id (eg, anthropic.claude-3-haiku-20240307-v1:0)
+    Default: anthropic.claude-3-haiku-20240307-v1:0
+  BedrockKnowledgeBaseId:
+    Type: String
+    Description: Bedrock Knowledge Base Id (eg, kb-1234567890abcdef)
+    Default: BedrockKnowledgeBaseId
+  SemanticCacheEnabled:
+    Type: String
+    Description: Enable Semantic Cache
+    Default: False
+    AllowedValues:
+      - True
+      - False
+  SemanticCacheVectorDBEndpoint:
+    Type: String
+    Description: Semantic Cache Vector DB Endpoint (only allow OpenSearch Serverless)
+    Default: SemanticCacheVectorDBEndpoint
+  SemanticCacheEmbeddingModelId:
+    Type: String
+    Description: Semantic Cache Embedding Model Id
+    Default: amazon.titan-embed-text-v2:0
+  DDBLLMHistoryTable:
+    Type: String
+    Description: DDB LLm History Table
+  DDBContactSummaryTable:
+    Type: String
+    Description: DDB Contact Summary Table
+
+
+Resources:
+  SSMParameterQuery:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/query"
+      Type: "String"
+      Value: "iPhone에서 eSIM 등록하는 방법"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterBedrockRegion:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/bedrock_region"
+      Type: "String"
+      Value: !Ref BedrockRegion
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterBedrockModelId:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/bedrock_model_id"
+      Type: "String"
+      Value: !Ref BedrockModelId
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterBedrockKbId:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/bedrock_kb_id"
+      Type: "String"
+      Value: !Ref BedrockKnowledgeBaseId
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterBedrockKBResultCount:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/bedrock_kb_result_count"
+      Type: "String"
+      Value: "5"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterMaxTokens:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/max_tokens"
+      Type: "String"
+      Value: "10000"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterTemperature:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/temperature"
+      Type: "String"
+      Value: "0.0"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterTopK:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/top_k"
+      Type: "String"
+      Value: "250"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterTopP:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/top_p"
+      Type: "String"
+      Value: "0.999"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterSemanticCacheEnabled:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/semantic_cache_enabled"
+      Type: "String"
+      Value: !Ref SemanticCacheEnabled
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterSemanticCacheEndpoint:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/semantic_cache_endpoint"
+      Type: "String"
+      Value: !Ref SemanticCacheVectorDBEndpoint
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterSemanticCacheEmbeddingModelId:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/semantic_cache_embedding_model_id"
+      Type: "String"
+      Value: !Ref SemanticCacheEmbeddingModelId
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterSemanticCacheScore:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/semantic_cache_score"
+      Type: "String"
+      Value: "0.9"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterRegionCacheEnabled:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/region_cache_enabled"
+      Type: "String"
+      Value: "False"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterRegionCacheEndpoint:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/region_cache_endpoint"
+      Type: "String"
+      Value: ""
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterRegionCacheKey:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/region_cache_key"
+      Type: "String"
+      Value: ""
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterDDBLlmHistory:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/dynamodb_llm_history"
+      Type: "String"
+      Value: !Ref DDBLLMHistoryTable
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterDDBContactSummary:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/dynamodb_contact_summary"
+      Type: "String"
+      Value: !Ref DDBContactSummaryTable
+      DataType: "text"
+      Tier: "Standard"
+
+Outputs:
+  SSMParameterQuery:
+    Value: !Ref SSMParameterQuery
+  SSMParameterBedrockRegion:
+    Value: !Ref SSMParameterBedrockRegion
+  SSMParameterBedrockModelId:
+    Value: !Ref SSMParameterBedrockModelId
+  SSMParameterBedrockKbId:
+    Value: !Ref SSMParameterBedrockKbId
+  SSMParameterBedrockKBResultCount:
+    Value: !Ref SSMParameterBedrockKBResultCount
+  SSMParameterMaxTokens:
+    Value: !Ref SSMParameterMaxTokens
+  SSMParameterTemperature:
+    Value: !Ref SSMParameterTemperature
+  SSMParameterTopK:
+    Value: !Ref SSMParameterTopK
+  SSMParameterTopP:
+    Value: !Ref SSMParameterTopP
+  SSMParameterSemanticCacheEnabled:
+    Value: !Ref SSMParameterSemanticCacheEnabled
+  SSMParameterSemanticCacheEndpoint:
+    Value: !Ref SSMParameterSemanticCacheEndpoint
+  SSMParameterSemanticCacheEmbeddingModelId:
+    Value: !Ref SSMParameterSemanticCacheEmbeddingModelId
+  SSMParameterSemanticCacheScore:
+    Value: !Ref SSMParameterSemanticCacheScore
+  SSMParameterRegionCacheEnabled:
+    Value: !Ref SSMParameterRegionCacheEnabled
+  SSMParameterRegionCacheEndpoint:
+    Value: !Ref SSMParameterRegionCacheEndpoint
+  SSMParameterRegionCacheKey:
+    Value: !Ref SSMParameterRegionCacheKey
+  SSMParameterDDBLlmHistory:
+    Value: !Ref SSMParameterDDBLlmHistory
+  SSMParameterDDBContactSummary:
+    Value: !Ref SSMParameterDDBContactSummary

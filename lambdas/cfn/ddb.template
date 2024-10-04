@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: DDB Tables for LLM history and summary
+
+Resources:
+  DDBContactSummary:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+#      TableName: !Ref DynamoDBContactSummary
+      AttributeDefinitions:
+        - AttributeName: "ContactId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "ContactId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+
+  DDBLlmHistory:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+#      TableName: !Ref DynamoDBLlmHistory
+      AttributeDefinitions:
+        - AttributeName: "AnsweredDate"
+          AttributeType: "S"
+        - AttributeName: "ContactId"
+          AttributeType: "S"
+        - AttributeName: "Id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "Id"
+          KeyType: "HASH"
+        - AttributeName: "AnsweredDate"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      GlobalSecondaryIndexes:
+        - IndexName: "ContactId-AnsweredDate-index"
+          KeySchema:
+            - AttributeName: "ContactId"
+              KeyType: "HASH"
+            - AttributeName: "AnsweredDate"
+              KeyType: "RANGE"
+          Projection:
+            ProjectionType: "ALL"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+
+Outputs:
+  DDBContactSummaryTable:
+    Value: !Ref DDBContactSummary
+  DDBLlmHistoryTable:
+    Value: !Ref DDBLlmHistory
