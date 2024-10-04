@@ -106,14 +106,7 @@ Parameters:
   SemanticCacheVectorDBEndpoint:
     Type: String
     Description: Semantic Cache VectorDB Endpoint (only for OpenSearch Serverless Endpoint)
-  DynamoDBLlmHistory:
-    Type: String
-    Description: DynamoDB Table for LLM History
-    Default: llm_history
-  DynamoDBContactSummary:
-    Type: String
-    Description: DynamoDB Table for Contact Summary
-    Default: contact_summary
+
 
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
@@ -130,9 +123,6 @@ Resources:
       Parameters:
         LambdaSubnets: !Ref LambdaSubnets
         LambdaSGs: !Ref LambdaSGs
-        DynamoDBLlmHistory: !GetAtt DDB.Outputs.DDBLLMHistoryTable.TableName
-        DynamoDBContactSummary: !GetAtt DDB.Outputs.DDBContactSummaryTable.TableName
-
 
   ApiGw:
     Type: AWS::CloudFormation::Stack
