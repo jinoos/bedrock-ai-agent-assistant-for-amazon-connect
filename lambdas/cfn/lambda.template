@@ -10,12 +10,6 @@ Parameters:
   LambdaSGs:
     Type: List<AWS::EC2::SecurityGroup::Id>
     Description: Security Group for Lambda Function
-  DynamoDBLlmHistory:
-    Type: String
-    Description: DynamoDB table for LLM history
-  DynamoDBContactSummary:
-    Type: String
-    Description: DynamoDB table for contact summary
 
 Resources:
   BedrockRagCallLangchainFunction:
@@ -108,8 +102,8 @@ Resources:
                   - 's3:GetObject'
                   - 's3:PutObject'
                 Resource:
-                  - 'arn:aws:s3:::your-bucket-name'
-                  - 'arn:aws:s3:::your-bucket-name/*'
+                  - 'arn:aws:s3:::*'
+                  - 'arn:aws:s3:::*/*'
               - Effect: Allow
                 Action:
                   - 'dynamodb:GetItem'
@@ -119,8 +113,7 @@ Resources:
                   - 'dynamodb:Query'
                   - 'dynamodb:Scan'
                 Resource:
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBLlmHistory}"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBContactSummary}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*"
               - Effect: Allow
                 Action:
                   - 'bedrock:InvokeModel'

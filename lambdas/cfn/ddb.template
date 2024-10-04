@@ -2,11 +2,20 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: DDB Tables for LLM history and summary
 
+Mappings:
+  Constants:
+    Values:
+      ContactSummaryPrefix: "aaa-contact-summary-"
+      LlmHistoryPrefix: "aaa-llm-history-"
+
 Resources:
   DDBContactSummary:
     Type: "AWS::DynamoDB::Table"
     Properties:
-#      TableName: !Ref DynamoDBContactSummary
+      TableName: !Join
+        - ''
+        - - !FindInMap [Constants, Values, ContactSummaryPrefix]
+          - !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]
       AttributeDefinitions:
         - AttributeName: "ContactId"
           AttributeType: "S"
@@ -20,7 +29,10 @@ Resources:
   DDBLlmHistory:
     Type: "AWS::DynamoDB::Table"
     Properties:
-#      TableName: !Ref DynamoDBLlmHistory
+      TableName: !Join
+        - ''
+        - - !FindInMap [Constants, Values, LlmHistoryPrefix]
+          - !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]
       AttributeDefinitions:
         - AttributeName: "AnsweredDate"
           AttributeType: "S"
