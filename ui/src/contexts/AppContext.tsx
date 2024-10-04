@@ -46,7 +46,19 @@ export const AppProvider = ({children}: AppProviderProps) => {
     }, []);
 
     return (
-        <AppContext.Provider value={{state, setState, connectId, setConnectId, connectApp, setConnectApp, contactClient, setContactClient, contactId, setContactId, handleConnectEvent}}>
+        <AppContext.Provider value={{
+            state,
+            setState,
+            connectId,
+            setConnectId,
+            connectApp,
+            setConnectApp,
+            contactClient,
+            setContactClient,
+            contactId,
+            setContactId,
+            handleConnectEvent
+        }}>
             {children}
         </AppContext.Provider>
     );

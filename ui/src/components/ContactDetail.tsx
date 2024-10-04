@@ -231,7 +231,9 @@ const ContactDetail = ({}: ContactDetailProps) => {
         fetchContactDetail();
     }, [id]);
 
-    if (loading) return <div><div className="loading-spinner"></div></div>;
+    if (loading) return <div>
+        <div className="loading-spinner"></div>
+    </div>;
     if (error) return <div>Error: {error}</div>;
     if (!contact) return <div>No contact found</div>;
 

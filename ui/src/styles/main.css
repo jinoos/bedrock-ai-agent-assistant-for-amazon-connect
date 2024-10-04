@@ -520,67 +520,71 @@ li {
 }
 
 .button-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
 }
 
 .centered-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
 }
 
 .centered-button:hover {
-  background-color: #0056b3;
+    background-color: #0056b3;
 }
 
 .centered-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+    background-color: #cccccc;
+    cursor: not-allowed;
 }
 
 .loading-spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
-  margin: 20px auto;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .result-container {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 5px;
-  border: 1px solid #dee2e6;
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
 }
 
 .result-container h3 {
-  margin-top: 0;
-  color: #007bff;
+    margin-top: 0;
+    color: #007bff;
 }
 
 .markdown-content {
-  font-family: 'Amazon Ember', Arial, sans-serif;
-  line-height: 1.6;
-  color: #333;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f8f8f8;
+    font-family: 'Amazon Ember', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f8f8;
 }
 
 .markdown-content h1,
@@ -589,107 +593,129 @@ li {
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-  margin-top: 24px;
-  margin-bottom: 16px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: #000;
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #000;
 }
 
-.markdown-content h1 { font-size: 2em; border-bottom: 1px solid #d1d1d1; padding-bottom: 0.3em; }
-.markdown-content h2 { font-size: 1.5em; border-bottom: 1px solid #d1d1d1; padding-bottom: 0.3em; }
-.markdown-content h3 { font-size: 1.25em; }
-.markdown-content h4 { font-size: 1em; }
-.markdown-content h5 { font-size: 0.875em; }
-.markdown-content h6 { font-size: 0.85em; color: #333; }
+.markdown-content h1 {
+    font-size: 2em;
+    border-bottom: 1px solid #d1d1d1;
+    padding-bottom: 0.3em;
+}
+
+.markdown-content h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #d1d1d1;
+    padding-bottom: 0.3em;
+}
+
+.markdown-content h3 {
+    font-size: 1.25em;
+}
+
+.markdown-content h4 {
+    font-size: 1em;
+}
+
+.markdown-content h5 {
+    font-size: 0.875em;
+}
+
+.markdown-content h6 {
+    font-size: 0.85em;
+    color: #333;
+}
 
 .markdown-content p {
-  margin-top: 0;
-  margin-bottom: 16px;
-  color: #1a1a1a;
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #1a1a1a;
 }
 
 .markdown-content a {
-  color: #1a1a1a;
-  text-decoration: underline;
+    color: #1a1a1a;
+    text-decoration: underline;
 }
 
 .markdown-content a:hover {
-  color: #000;
+    color: #000;
 }
 
 .markdown-content strong {
-  font-weight: 600;
-  color: #000;
+    font-weight: 600;
+    color: #000;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-  padding-left: 2em;
-  margin-top: 0;
-  margin-bottom: 16px;
-  color: #1a1a1a;
+    padding-left: 2em;
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #1a1a1a;
 }
 
 .markdown-content li {
-  margin-bottom: 0.25em;
+    margin-bottom: 0.25em;
 }
 
 .markdown-content code {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-  padding: 0.2em 0.4em;
-  margin: 0;
-  font-size: 85%;
-  background-color: #e6e6e6;
-  border-radius: 3px;
-  color: #000;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: #e6e6e6;
+    border-radius: 3px;
+    color: #000;
 }
 
 .markdown-content pre {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-  padding: 16px;
-  overflow: auto;
-  font-size: 85%;
-  line-height: 1.45;
-  background-color: #e6e6e6;
-  border-radius: 3px;
-  color: #000;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #e6e6e6;
+    border-radius: 3px;
+    color: #000;
 }
 
 .markdown-content blockquote {
-  padding: 0 1em;
-  color: #333;
-  border-left: 0.25em solid #999;
-  margin: 0 0 16px 0;
+    padding: 0 1em;
+    color: #333;
+    border-left: 0.25em solid #999;
+    margin: 0 0 16px 0;
 }
 
 .markdown-content img {
-  max-width: 100%;
-  box-sizing: content-box;
-  background-color: #fff;
+    max-width: 100%;
+    box-sizing: content-box;
+    background-color: #fff;
 }
 
 .markdown-content hr {
-  height: 0.25em;
-  padding: 0;
-  margin: 24px 0;
-  background-color: #999;
-  border: 0;
+    height: 0.25em;
+    padding: 0;
+    margin: 24px 0;
+    background-color: #999;
+    border: 0;
 }
 
 .markdown-content table {
-  border-spacing: 0;
-  border-collapse: collapse;
-  margin-top: 0;
-  margin-bottom: 16px;
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin-top: 0;
+    margin-bottom: 16px;
 }
 
 .markdown-content table th,
 .markdown-content table td {
-  padding: 6px 13px;
-  border: 1px solid #999;
+    padding: 6px 13px;
+    border: 1px solid #999;
 }
 
 .markdown-content table tr:nth-child(2n) {
-  background-color: #e6e6e6;
+    background-color: #e6e6e6;
 }

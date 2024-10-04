@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { formatTimestamp, getContactHistory } from '../services/api';
+import React, {useState, useEffect, useCallback} from 'react';
+import {Link} from 'react-router-dom';
+import {formatTimestamp, getContactHistory} from '../services/api';
 import RefreshButton from "./RefreshButton";
-import { useAppContext } from '../contexts/AppContext';
+import {useAppContext} from '../contexts/AppContext';
 
 interface Contact {
     Arn: string;
@@ -31,7 +31,7 @@ export interface ContactListResponse {
 }
 
 const ContactHistory = () => {
-    const { state, setState , contactId} = useAppContext();
+    const {state, setState, contactId} = useAppContext();
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchContacts = useCallback(async () => {

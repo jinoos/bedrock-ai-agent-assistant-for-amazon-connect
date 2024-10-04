@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import ContactHistory from './components/ContactHistory';
 import ContactDetail from './components/ContactDetail';
 import KnowledgeBase from './components/KnowledgeBase';
-import {AppProvider, useAppContext} from './contexts/AppContext';
+import {useAppContext} from './contexts/AppContext';
 import ChatUI from "./components/ChatUI";
 import {AmazonConnectApp} from "@amazon-connect/app";
 import {
@@ -79,7 +79,6 @@ const App = () => {
         <Router>
             <Layout>
                 <Routes>
-                    {/*<Route path="/" element={<ChatUI/>}/>*/}
                     <Route path="/chatbot" element={<ChatUI/>}/>
                     <Route path="/contact-history" element={<ContactHistory/>}/>
                     <Route path="/contact-history/contact/:id" element={<ContactDetail/>}/>

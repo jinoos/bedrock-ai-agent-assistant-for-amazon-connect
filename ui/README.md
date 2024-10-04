@@ -24,7 +24,7 @@ npm install -D ts-loader html-webpack-plugin
 ```
 
 ## Create S3 bucket & Cloudfront Distribution with Domain
-> **Notice**: 프로젝트 Root에서 CF 패키지를 통해 이미 Stack 배포를 하였다면 아래는 생략 합니다.
+> **Notice**: 프로젝트 Root에서 이미 CNF Stack 배포를 하였다면 아래는 생략 합니다.
  
 3P App을 위한 S3 Bucket과 Public Service를 위한 CF Domain을 CloudFormation으로 생성합니다. 
 
@@ -32,15 +32,34 @@ npm install -D ts-loader html-webpack-plugin
 ```shell
 aws cloudformation deploy \
    --template-file ui.template \
-   --stack-name <CNF-STACK-NAME> \
+   --stack-name <CLOUDFORMATION-STACK-NAME> \
    --parameter-overrides "BucketName=<S3-BUCKET-NAME-UI-FILES>"
-   
-aws cloudformation deploy \
-   --template-file ui.template \
-   --stack-name aaa-ui \
-   --parameter-overrides BucketName=aaa-ui
 ```
-`CFN-STACK-NAME`과 `S3-BUCKET-NAME-UI-FILES`을 원하는 값으로 변경
+`CLOUDFORMATION-STACK-NAME`과 `S3-BUCKET-NAME-UI-FILES`을 원하는 값으로 변경
+
+### Check outputs
+```shell
+aws cloudformation describe-stacks \
+   --stack-name <CLOUDFORMATION-STACK-NAME> \
+   --query "Stacks[0].Outputs"
+```
+정상적으로 배포 되었다면, 아래와 같이 Outputs 정보를 확인이 가능
+
+`DistributionDomainName`의 Domain Name으로 `Amazon Connect`에 `3P App`으로 등록 합니다.
+```shell
+[
+    {
+        "OutputKey": "Bucket",
+        "OutputValue": "<S3-BUCKET-NAME-UI-FILES>",
+        "Description": "Bucket Name"
+    },
+    {
+        "OutputKey": "DistributionDomainName",
+        "OutputValue": "----------------.cloudfront.net",
+        "Description": "Domain name of the CloudFront distribution"
+    }
+]
+```
 
 ## Configure Backend Endpoint
 Lambda 호출을 위한 Backend API Gateway URL을 설정파일(```src/Configure.tsx```)에 업데이트 합니다.
