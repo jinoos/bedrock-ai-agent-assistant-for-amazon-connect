@@ -1,6 +1,22 @@
 # Lambda functions
 
 ## Prerequisites
+CFN Packaging
+```shell
+aws cloudformation package \
+   --template-file template-ori.yaml \
+   --s3-bucket <S3-FOR-CFN-PACKAGE> \
+   --s3-prefix <S3-PREFIX-FOR-CFN-PACKAGE> \
+   --output-template-file template.yaml
+aws cloudformation package \
+   --template-file template-ori.yaml \
+   --s3-bucket cf-template-009160053058 \
+   --s3-prefix lambdas \
+   --output-template-file template.yaml
+aws cloudformation deploy \
+   --template-file template.yaml \
+   --stack-name default-network-vpc-subnets
+```
 # bedrock-rag-call-langchain
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.

@@ -11,7 +11,6 @@ Metadata:
         Parameters:
           - LambdaSubnets
           - LambdaSGs
-          - LambdaRoleArn
       - Label:
           default: LLM Settings
         Parameters:
@@ -26,7 +25,7 @@ Metadata:
           - SemanticCacheEmbeddingModelId
           - SemanticCacheVectorDBEndpoint
       - Label:
-          default: DynamoDB Settings
+          default: Lambda Settings
         Parameters:
           - ApiGWName
 
@@ -37,9 +36,6 @@ Parameters:
   LambdaSGs:
     Type: List<AWS::EC2::SecurityGroup::Id>
     Description: Security Group for Lambda Function
-  LambdaRoleArn:
-    Type: String
-    Description: Role ARN for Lambda Function
   ApiGWName:
     Type: String
     Description: Name for Api Gateway
