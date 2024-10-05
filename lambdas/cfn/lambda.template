@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
-Description: Api Gateway for Lambdas
+Description: Lambdas functions
 
 Parameters:
   LambdaSubnets:
@@ -98,6 +98,15 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:AttachNetworkInterface'
+                Resource:
+                  - '*'
+              - Effect: Allow
+                Action:
                   - 's3:ListBucket'
                   - 's3:GetObject'
                   - 's3:PutObject'
@@ -135,6 +144,13 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:GetParameters'
+                  - 'ssm:GetParametersByPath'
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+              - Effect: Allow
+                Action:
                   - 'logs:CreateLogGroup'
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
@@ -143,12 +159,12 @@ Resources:
 
 Outputs:
   BedrockRagCallLangchainFunction:
-    Value: !Ref BedrockRagCallLangchainFunction
+    Value: !GetAtt BedrockRagCallLangchainFunction.Arn
   KnowledgeBaseFunction:
-    Value: !Ref KnowledgeBaseFunction
+    Value: !GetAtt KnowledgeBaseFunction.Arn
   ContactHistoryFunction:
-    Value: !Ref ContactHistoryFunction
+    Value: !GetAtt ContactHistoryFunction.Arn
   LlmCallFunction:
-    Value: !Ref LlmCallFunction
+    Value: !GetAtt LlmCallFunction.Arn
   LambdaExecutionRole:
-    Value: !Ref LambdaExecutionRole
+    Value: !GetAtt LambdaExecutionRole.Arn

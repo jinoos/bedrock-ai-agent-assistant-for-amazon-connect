@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Systems Manager Parameters
+Description: Parameters for lambda functions
 
 Parameters:
   BedrockRegion:
@@ -30,7 +30,7 @@ Parameters:
     Type: String
     Description: Semantic Cache Embedding Model Id
     Default: amazon.titan-embed-text-v2:0
-  DDBLLMHistoryTable:
+  DDBLlmHistoryTable:
     Type: String
     Description: DDB LLm History Table
   DDBContactSummaryTable:
@@ -170,7 +170,7 @@ Resources:
     Properties:
       Name: "/aaa/region_cache_endpoint"
       Type: "String"
-      Value: ""
+      Value: " "
       DataType: "text"
       Tier: "Standard"
 
@@ -179,7 +179,7 @@ Resources:
     Properties:
       Name: "/aaa/region_cache_key"
       Type: "String"
-      Value: ""
+      Value: " "
       DataType: "text"
       Tier: "Standard"
 
@@ -188,7 +188,7 @@ Resources:
     Properties:
       Name: "/aaa/dynamodb_llm_history"
       Type: "String"
-      Value: !Ref DDBLLMHistoryTable
+      Value: !Ref DDBLlmHistoryTable
       DataType: "text"
       Tier: "Standard"
 

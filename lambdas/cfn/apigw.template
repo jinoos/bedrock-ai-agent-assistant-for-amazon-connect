@@ -3,22 +3,22 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Api Gateway for Lambdas
 
 Parameters:
-  LlmCallFunctionArn:
-    Type: String
-    Description: LlmCall Lambda Function ARN
-    Default: LlmCallFunctionArn
-  KnowledgeBaseFunctionArn:
-    Type: String
-    Description: KnowledgeBase Lambda Function ARN
-    Default: KnowledgeBaseFunctionArn
-  ContactHistoryFunctionArn:
-    Type: String
-    Description: ContactHistory Lambda Function ARN
-    Default: ContactHistoryFunctionArn
   BedrockRagCallLangchainFunctionArn:
     Type: String
     Description: BedrockRagCallLangchainFunctionArn Lambda Function ARN
     Default: BedrockRagCallLangchainFunctionArn
+  KnowledgeBaseFunctionArn:
+    Type: String
+    Description: KnowledgeBase Lambda Function ARN
+    Default: KnowledgeBaseFunctionArn
+  LlmCallFunctionArn:
+    Type: String
+    Description: LlmCall Lambda Function ARN
+    Default: LlmCallFunctionArn
+  ContactHistoryFunctionArn:
+    Type: String
+    Description: ContactHistory Lambda Function ARN
+    Default: ContactHistoryFunctionArn
 
 Resources:
   ApiGatewayRestApi:
@@ -39,44 +39,30 @@ Resources:
       DeploymentId: !Ref ApiGatewayDeployment
       RestApiId: !Ref ApiGatewayRestApi
       CacheClusterEnabled: false
-      CacheClusterSize: "0.5"
       TracingEnabled: false
 
   ApiGatewayDeployment:
     Type: "AWS::ApiGateway::Deployment"
+    DependsOn:
+      - ApiGatewayRootMethod
+      - MethodLlmCallAny
+      - MethodLlmCallOptions
+      - MethodLlmCallProxyAny
+      - MethodLlmCallProxyOptions
+      - MethodKBAny
+      - MethodKBOptions
+      - MethodKBProxyAny
+      - MethodKBproxyOptions
+      - MethodCHAny
+      - MethodCHOptions
+      - MethodCHProxyAny
+      - MethodCHProxyOpions
+      - MethodChatbotAny
+      - MethodChatbotOptions
+      - MethodChatbotProxyAny
+      - MethodChatbotProxyOptions
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
-
-  ApiGatewayModelEmpty:
-    Type: "AWS::ApiGateway::Model"
-    Properties:
-      RestApiId: !Ref ApiGatewayRestApi
-      Name: "Empty"
-      Description: "This is a default empty schema model"
-      Schema: |
-        {
-          "$schema": "http://json-schema.org/draft-04/schema#",
-          "title" : "Empty Schema",
-          "type" : "object"
-        }
-      ContentType: "application/json"
-
-  ApiGatewayModelError:
-    Type: "AWS::ApiGateway::Model"
-    Properties:
-      RestApiId: !Ref ApiGatewayRestApi
-      Name: "Error"
-      Description: "This is a default error schema model"
-      Schema: |
-        {
-          "$schema" : "http://json-schema.org/draft-04/schema#",
-          "title" : "Error Schema",
-          "type" : "object",
-          "properties" : {
-            "message" : { "type" : "string" }
-          }
-        }
-      ContentType: "application/json"
 
   MethodChatbotOptions:
     Type: "AWS::ApiGateway::Method"
@@ -88,8 +74,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -131,34 +116,28 @@ Resources:
         Type: "AWS_PROXY"
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LlmCallFunctionArn}/invocations
 
-  MethodLlmCallGet:
+  MethodLlmCallAny:
     Type: "AWS::ApiGateway::Method"
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
       ResourceId: !Ref ResourceLlmCall
-      HttpMethod: "GET"
+      HttpMethod: "ANY"
       AuthorizationType: "NONE"
       ApiKeyRequired: false
-      RequestParameters: { }
-      RequestModels: { }
-      MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
-          ResponseParameters:
-            "method.response.header.Access-Control-Allow-Origin": false
-          StatusCode: "200"
+      RequestParameters:
+        "method.request.path.proxy": true
       Integration:
         CacheNamespace: !Ref ResourceLlmCall
         ContentHandling: "CONVERT_TO_TEXT"
         IntegrationHttpMethod: "POST"
         IntegrationResponses:
-          - ResponseParameters:
-              "method.response.header.Access-Control-Allow-Origin": "'*'"
-            ResponseTemplates: { }
+          - ResponseTemplates: { }
             StatusCode: "200"
-        PassthroughBehavior: "WHEN_NO_MATCH"
+        PassthroughBehavior: "WHEN_NO_TEMPLATES"
+        RequestParameters:
+          "integration.request.path.proxy": "method.request.path.proxy"
         TimeoutInMillis: 29000
-        Type: "AWS"
+        Type: "AWS_PROXY"
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LlmCallFunctionArn}/invocations
 
   MethodCHProxyOpions:
@@ -171,8 +150,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -203,8 +181,7 @@ Resources:
       RequestParameters: { }
       RequestModels: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           StatusCode: "200"
       Integration:
         CacheNamespace: !Ref ResourceKB
@@ -228,8 +205,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -259,8 +235,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -290,8 +265,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -321,8 +295,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -360,8 +333,7 @@ Resources:
       RequestParameters: { }
       RequestModels: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           StatusCode: "200"
       Integration:
         CacheNamespace: !Ref ResourceCH
@@ -421,8 +393,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -511,36 +482,6 @@ Resources:
       PathPart: "llm-call"
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
 
-  MethodLlmCallPost:
-    Type: "AWS::ApiGateway::Method"
-    Properties:
-      RestApiId: !Ref ApiGatewayRestApi
-      ResourceId: !Ref ResourceLlmCall
-      HttpMethod: "POST"
-      AuthorizationType: "NONE"
-      ApiKeyRequired: false
-      RequestParameters: { }
-      RequestModels: { }
-      MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
-          ResponseParameters:
-            "method.response.header.Access-Control-Allow-Origin": false
-          StatusCode: "200"
-      Integration:
-        CacheNamespace: !Ref ResourceLlmCall
-        ContentHandling: "CONVERT_TO_TEXT"
-        IntegrationHttpMethod: "POST"
-        IntegrationResponses:
-          - ResponseParameters:
-              "method.response.header.Access-Control-Allow-Origin": "'*'"
-            ResponseTemplates: { }
-            StatusCode: "200"
-        PassthroughBehavior: "WHEN_NO_MATCH"
-        TimeoutInMillis: 29000
-        Type: "AWS"
-        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LlmCallFunctionArn}/invocations
-
   MethodChatbotAny:
     Type: "AWS::ApiGateway::Method"
     Properties:
@@ -552,8 +493,7 @@ Resources:
       RequestParameters: { }
       RequestModels: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           StatusCode: "200"
       Integration:
         CacheNamespace: !Ref ResourceChatbot
@@ -574,7 +514,7 @@ Resources:
       PathPart: "chatbot"
       ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
 
-  ApiGatewayMethod20:
+  ApiGatewayRootMethod:
     Type: "AWS::ApiGateway::Method"
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
@@ -586,7 +526,7 @@ Resources:
       RequestModels: { }
       MethodResponses:
         - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+            "application/json": "Empty"
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -618,8 +558,7 @@ Resources:
       ApiKeyRequired: false
       RequestParameters: { }
       MethodResponses:
-        - ResponseModels:
-            "application/json": !Ref ApiGatewayModelEmpty
+        - ResponseModels: {}
           ResponseParameters:
             "method.response.header.Access-Control-Allow-Headers": false
             "method.response.header.Access-Control-Allow-Methods": false
@@ -650,3 +589,5 @@ Resources:
 Outputs:
   ApiGatewayRestApi:
     Value: !Ref ApiGatewayRestApi
+  ApiGatewayEndpoint:
+    Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod"

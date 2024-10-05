@@ -125,10 +125,10 @@ Resources:
     Properties:
       TemplateURL: cfn/apigw.template
       Parameters:
-        LlmCallFunctionArn: !GetAtt Lambda.Outputs.LlmCallFunction.Arn
-        KnowledgeBaseFunctionArn: !GetAtt Lambda.Outputs.KnowledgeBaseFunction.Arn
-        ContactHistoryFunctionArn: !GetAtt Lambda.Outputs.ContactHistoryFunction.Arn
-        BedrockRagCallLangchainFunctionArn: !GetAtt Lambda.Outputs.BedrockRagCallLangchainFunction.Arn
+        BedrockRagCallLangchainFunctionArn: !GetAtt Lambda.Outputs.BedrockRagCallLangchainFunction
+        KnowledgeBaseFunctionArn: !GetAtt Lambda.Outputs.KnowledgeBaseFunction
+        LlmCallFunctionArn: !GetAtt Lambda.Outputs.LlmCallFunction
+        ContactHistoryFunctionArn: !GetAtt Lambda.Outputs.ContactHistoryFunction
 
   DDB:
     Type: AWS::CloudFormation::Stack
@@ -152,16 +152,16 @@ Resources:
 Outputs:
   BedrockRagCallLangchainFunction:
     Description: "Bedrock Rag Call Langchain Lambda Function ARN"
-    Value: !GetAtt Lambda.Outputs.BedrockRagCallLangchainFunction.Arn
+    Value: !GetAtt Lambda.Outputs.BedrockRagCallLangchainFunction
   #  BedrockRagCallFunction:
   #    Description: "Bedrock Rag Call Lambda Function ARN"
   #    Value: !GetAtt BedrockRagCallFunction.Arn
   KnowledgeBaseFunction:
     Description: "Knowledge Base Lambda Function ARN"
-    Value: !GetAtt Lambda.Outputs.KnowledgeBaseFunction.Arn
+    Value: !GetAtt Lambda.Outputs.KnowledgeBaseFunction
   ContactHistoryFunction:
     Description: "Contact History Management Function ARN"
-    Value: !GetAtt Lambda.Outputs.ContactHistoryFunction.Arn
+    Value: !GetAtt Lambda.Outputs.ContactHistoryFunction
   LlmCallFunction:
     Description: "Contact History Management Function ARN"
-    Value: !GetAtt Lambda.Outputs.LlmCallFunction.Arn
+    Value: !GetAtt Lambda.Outputs.LlmCallFunction
