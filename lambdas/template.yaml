@@ -10,7 +10,8 @@ Metadata:
           default: Amazon Connect
         Parameters:
           - ConnectId
-          - LambdaSGs
+          - SummaryBucketName
+          - SummaryBucketPrefix
       - Label:
           default: Lambda & Api Gateway Settings
         Parameters:
@@ -34,6 +35,12 @@ Parameters:
   ConnectId:
     Type: String
     Description: Instance Id for Amazon Connect
+  SummaryBucketName:
+    Type: String
+    Description: Bucket Name for Contact Summary
+  SummaryBucketPrefix:
+    Type: String
+    Description: Bucket Prefix for Contact Summary
   LambdaSubnets:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Private Subnets for Lambda Function
@@ -152,18 +159,27 @@ Resources:
         DDBContactSummaryTable: !GetAtt DDB.Outputs.DDBContactSummaryTable
 
 Outputs:
-  BedrockRagCallLangchainFunction:
+  DDBHistoryTable:
+    Value: !GetAtt DDB.Outputs.DDBLlmHistoryTable
+  DDBContactSummary:
+    Value: !GetAtt DDB.Outputs.DDBContactSummaryTable
+  LambdaBedrockRagCallLangchain:
     Description: "Bedrock Rag Call Langchain Lambda Function ARN"
     Value: !GetAtt Lambda.Outputs.BedrockRagCallLangchainFunction
   #  BedrockRagCallFunction:
   #    Description: "Bedrock Rag Call Lambda Function ARN"
   #    Value: !GetAtt BedrockRagCallFunction.Arn
-  KnowledgeBaseFunction:
+  LambdaKnowledgeBase:
     Description: "Knowledge Base Lambda Function ARN"
     Value: !GetAtt Lambda.Outputs.KnowledgeBaseFunction
-  ContactHistoryFunction:
+  LambdaContactHistory:
     Description: "Contact History Management Function ARN"
     Value: !GetAtt Lambda.Outputs.ContactHistoryFunction
-  LlmCallFunction:
+  LambdaLlmCall:
     Description: "Contact History Management Function ARN"
     Value: !GetAtt Lambda.Outputs.LlmCallFunction
+  ApiGateway:
+    Value: !GetAtt ApiGw.Outputs.ApiGatewayRestApi
+  ApiGatewayEndpoint:
+    Value: !GetAtt ApiGw.Outputs.ApiGatewayEndpoint
+

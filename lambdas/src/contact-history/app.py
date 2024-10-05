@@ -202,8 +202,23 @@ def convert_tran_segment_from_chat(contactInfo: dict, seg: dict):
     return newSeg
 
 
+def get_connect_s3_bucket_name():
+    # Amazon Connect 클라이언트 생성
+    connect = boto3.client('connect')
+
+    # 함수 호출 및 응답 받기
+    response = connect.list_instance_storage_configs(
+        InstanceId=get_connect_id(),
+        ResourceType='CALL_RECORDINGS'
+    )
+    # 응답에서 BucketName 추출
+    storage_config = response['StorageConfigs'][0]
+    bucket_name = storage_config['StorageConfig']['S3Config'].get('BucketName')
+    return bucket_name
+
+
 def get_s3_analysis_file(contactInfo):
-    s3Bucket = "anytelecom-connect-data"
+    s3Bucket = get_connect_s3_bucket_name()
     channel = contactInfo['Contact']['Channel']
 
     contactId = contactInfo['Contact']['Id']

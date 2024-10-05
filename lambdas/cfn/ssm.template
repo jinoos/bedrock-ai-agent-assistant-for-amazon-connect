@@ -6,6 +6,12 @@ Parameters:
   ConnectId:
     Type: String
     Description: Connect Instance Id
+  SummaryBucketName:
+    Type: String
+    Description: S3 Bucket Name for Contact Summary
+  SummaryBucketPrefix:
+    Type: String
+    Description: S3 Bucket Prefix for Contact Summary
   BedrockRegion:
     Type: String
     Description: Bedrock Region (eg, us-west-2)
@@ -42,12 +48,39 @@ Parameters:
 
 
 Resources:
-  SSMParameterQuery:
+  SSMParameterContactId:
     Type: "AWS::SSM::Parameter"
     Properties:
       Name: "/aaa/connect_id"
       Type: "String"
       Value: !Ref ConnectId
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterQuery:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/query"
+      Type: "String"
+      Value: "Default Query"
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterSummaryBucketName:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/summary_bucket_name"
+      Type: "String"
+      Value: !Ref SummaryBucketName
+      DataType: "text"
+      Tier: "Standard"
+
+  SSMParameterSummaryBucketPrefix:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: "/aaa/summary_bucket_prefix"
+      Type: "String"
+      Value: !Ref SummaryBucketPrefix
       DataType: "text"
       Tier: "Standard"
 
@@ -304,43 +337,49 @@ Resources:
       Tier: "Standard"
 
 Outputs:
-  SSMParameterQuery:
+  ConnectId:
+    Value: !Ref SSMParameterContactId
+  SummaryBucketName:
+    Value: !Ref SSMParameterSummaryBucketName
+  SummaryBucketPrefix:
+    Value: !Ref SSMParameterSummaryBucketPrefix
+  Query:
     Value: !Ref SSMParameterQuery
-  SSMParameterBedrockRegion:
+  BedrockRegion:
     Value: !Ref SSMParameterBedrockRegion
-  SSMParameterBedrockModelId:
+  BedrockModelId:
     Value: !Ref SSMParameterBedrockModelId
-  SSMParameterBedrockKbId:
+  BedrockKbId:
     Value: !Ref SSMParameterBedrockKbId
-  SSMParameterBedrockKBResultCount:
+  BedrockKBResultCount:
     Value: !Ref SSMParameterBedrockKBResultCount
-  SSMParameterQueryInstruction:
+  QueryInstruction:
     Value: !Ref SSMParameterQueryInstruction
-  SSMParameterSummaryInstruction:
+  SummaryInstruction:
     Value: !Ref SSMParameterSummaryInstruction
-  SSMParameterMaxTokens:
+  MaxTokens:
     Value: !Ref SSMParameterMaxTokens
-  SSMParameterTemperature:
+  Temperature:
     Value: !Ref SSMParameterTemperature
-  SSMParameterTopK:
+  TopK:
     Value: !Ref SSMParameterTopK
-  SSMParameterTopP:
+  TopP:
     Value: !Ref SSMParameterTopP
-  SSMParameterSemanticCacheEnabled:
+  SemanticCacheEnabled:
     Value: !Ref SSMParameterSemanticCacheEnabled
-  SSMParameterSemanticCacheEndpoint:
+  SemanticCacheEndpoint:
     Value: !Ref SSMParameterSemanticCacheEndpoint
-  SSMParameterSemanticCacheEmbeddingModelId:
+  SemanticCacheEmbeddingModelId:
     Value: !Ref SSMParameterSemanticCacheEmbeddingModelId
-  SSMParameterSemanticCacheScore:
+  SemanticCacheScore:
     Value: !Ref SSMParameterSemanticCacheScore
-  SSMParameterRegionCacheEnabled:
+  RegionCacheEnabled:
     Value: !Ref SSMParameterRegionCacheEnabled
-  SSMParameterRegionCacheEndpoint:
+  RegionCacheEndpoint:
     Value: !Ref SSMParameterRegionCacheEndpoint
-  SSMParameterRegionCacheKey:
+  RegionCacheKey:
     Value: !Ref SSMParameterRegionCacheKey
-  SSMParameterDDBLlmHistory:
+  DDBLlmHistory:
     Value: !Ref SSMParameterDDBLlmHistory
-  SSMParameterDDBContactSummary:
+  DDBContactSummary:
     Value: !Ref SSMParameterDDBContactSummary

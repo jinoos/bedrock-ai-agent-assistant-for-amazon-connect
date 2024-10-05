@@ -14,10 +14,7 @@ import hashlib
 
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-from langchain_core.caches import BaseCache, RETURN_VAL_TYPE
-from langchain_core.embeddings import Embeddings
-from langchain_core.load import loads, dumps
-from langchain_core.outputs import Generation
+from langchain_community.cache import OpenSearchSemanticCache
 from opensearchpy import AWSV4SignerAsyncAuth
 from redis import Redis
 
@@ -25,9 +22,6 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.globals import set_llm_cache
-from langchain_community.vectorstores import (
-    OpenSearchVectorSearch as OpenSearchVectorStore,
-)
 from langchain_community.embeddings import BedrockEmbeddings
 
 from langchain_aws import ChatBedrock
@@ -128,81 +122,9 @@ def exportSummaryDbToS3(contactId: str):
     res = exportLlmSummaryToS3(contactId)
     return res
 
+
 def generateSummaryLlmInstruction() -> str:
-    instruction = """
-        당신은 전화 상담원의 통화 기록을 분석 하는 전문 분석가 입니다.
-        입력된 JSON 문서를 바탕으로 최종 결과물을 응답하세요
-        제공된 문의는 고객('CUSTOMER'), 상담원('AGENT'), 그리고 상담원을 돕는 AI('AI')가 나눈 대화 내용
-        "~하겠습니다", "~하려고합니다" 와 같은 표현 금지
-        
-        제공된 질문은 JSON 형태입니다. 대화내용과 대화자 구분을 활용하여 분석하세요.
-        - Content: 대화내용
-        - ParticipantId: 대화자 구분
-        - Id: Json 고유키
-        - AbsoluteTime: 대화 발생 시간
-
-        아래 처리 기준을 바탕으로 응답합니다.
-
-        처리 기준
-        - 언어: 한국어로 답변
-        - 객관성: 당신의 개인적인 해석이나 판단을 배제
-        - 정확성: 날짜, 시간, 이름, 숫자, 장소 등의 구체적인 정보를 정확하게 발견하고 전달
-        - 완전성: 중요한 정보가 누락되지 않도록 주의
-        - 가독성: 모든 출력에서 적절한 띄어쓰기를 사용
-        - 단순함: 존칭은 생략하고 정보만 전달
-        - 순서가 있는 동작이 포함된 답변은, 단계별로 라인을 구분하고, 순서를 표시 해 주세요. 
-        - 여러가지의 문제를 해결 했다면, 문제별로 조치내용을 구분지어 정리
-        - 개인 정보 처리는 아래 기준으로 처리
-        - 고객과 상담원의 대화 내용을 중심으로 맥락을 파악합니다.
-        - AI의 대화내용은 상담원의 응답을 확장해 주는 용도입니다. 주된 내용에서는 빼주세요. 
-        - 순서있는 목록, 순서없는 목록, 문서 링크등 활용 가능 
-
-        응답 기준
-         - 응답은 아래 <응답포멧>을 참고
-         - <format>의 괄호는 작성에 대한 설명입니다. 응답에선 형식을 제외
-         - Markdown 문서 포멧으로 작성
-         - 응답에서 <개인 정보>는 "XXXXX" 형태로 변경
-         - 응답에서 <개인 정보>는 노출 금지
-         - 구체적인 번호는 생략
-         - 구체적인 개인 정보는 생략
-         
-        <개인 정보>
-         - 주민번호
-         - 주민 번호
-         - 전화번호
-         - 전화 번호
-         - 성명
-         - 이름
-         - 성별
-         - 주소
-         - 이메일
-         - 여권번호
-         - 나이
-         - 연령
-
-        <응답포멧>
-         ## 제목 (제목을 20자 이내로 요약)
-         (상담 내용을 100자 이내로 요약, 어떤 문의에서 필요한 문서인지 인지할 수 있어야 함)
-
-         ### 고객의 문의 또는 문제
-         (고객이 현재 알고 싶어하는 내용이나 문제를 자세히 기술 이내로 요약)
-
-         ### 문제 해결 방법
-         (상담원과 고객의 대화를 바탕으로 문제 해결을 위한 설명이나 방법을 요약합니다. 500자 이내)
-
-         ### 해결되지 않은 문제
-         (고객의 처한 상황이나 문의 중 대화중에 해결되지 않은 궁금증이나 문제를 300자 이내로 정리)
-
-         ## 키워드 리스트
-         (본 대외에서 키워드, Tag를 최소 2개~5개로 나열형( - list) 항목으로 제작)
-         
-         ## 상담 관련 정리
-         ### 상담 일시
-         YYYY-mm-dd HH:ii ~ HH:ii (총 XX분) (상담 일시와 상담 시간을 정리. 시간 표현은 분까지만 표현할 것. 데이터의 일시는 UTC 시간대 임. KST 시간대로 변환해서 정리. 정확히 고객과 상담원의 대화 시간 만 계산할 것, AI 메시지 시간은 제외)
-         ### 최종 정리
-         (제 3자의 입장에서 상담 과정을 보고, 전체적으로 정리)
-        </응답포멧>
-    """
+    instruction = get_summary_instruction()
     return instruction
 
 
@@ -217,6 +139,7 @@ class LlmParam:
 class LlmResponse:
     parameter: LlmParam = None
     response: str = ""
+
 
 # @todo : Context 구현하기
 def llmCall(param: LlmParam) -> LlmResponse:
@@ -307,9 +230,8 @@ def insertLlmSummaryDb(contactId: str, query: str, answer: str, instruction: str
 
 
 def exportLlmSummaryToS3(contactId: str):
-    bucket = "anytelecom"
-    bucketOregon = "anytelecom-oregon"
-    prefix = "callcenter-contents/call-summary/"
+    bucket = get_summary_bucket_name()
+    prefix = get_summary_bucket_prefix()
     if contactId is None:
         raise Exception("No contentId")
 
@@ -323,26 +245,21 @@ def exportLlmSummaryToS3(contactId: str):
     try:
         # 파일 존재 여부 확인
         s3.head_object(Bucket=bucket, Key=key)
-        s3.head_object(Bucket=bucketOregon, Key=key)
         # 파일이 존재하면 삭제
         s3.delete_object(Bucket=bucket, Key=key)
-        s3.delete_object(Bucket=bucketOregon, Key=key)
         print(f"기존 파일 '{key}'를 삭제했습니다.")
     except ClientError as e:
         # 파일이 존재하지 않으면 (404 에러) 그냥 넘어갑니다.
         if e.response['Error']['Code'] != '404':
             raise
-
     # 새로운 데이터 업로드
     try:
         s3.put_object(Bucket=bucket, Key=key, Body=summaryData['Answer'])
-        s3.put_object(Bucket=bucketOregon, Key=key, Body=summaryData['Answer'])
         print(f"Upload file success s3://{bucket}/{key}")
     except ClientError as e:
         raise
 
     return "s3://" + bucket + "/" + key
-
 
 
 def getLlmHistory(contactId: str):
@@ -504,6 +421,14 @@ def get_region_cache_key():
     return ps_get('/aaa/region_cache_key')
 
 
+def get_summary_bucket_name():
+    return ps_get('/aaa/summary_bucket_name')
+
+
+def get_summary_bucket_prefix():
+    return ps_get('/aaa/summary_bucket_prefix')
+
+
 def get_hash(input_string):
     encoded_str = input_string.encode()
     sha256 = hashlib.sha256()
@@ -548,6 +473,14 @@ def get_ddb_llm_history():
 
 def get_ddb_contact_summary():
     return ps_get('/aaa/dynamodb_contact_summary')
+
+
+def get_summary_instruction():
+    return ps_get('/aaa/summary_instruction')
+
+
+def get_query_instruction():
+    return ps_get('/aaa/query_instruction')
 
 
 def get_chain(model, prompt, retriever):
@@ -604,7 +537,7 @@ def get_bedrock_kb_retriever():
 
 
 def get_semantic_cache_instance(auth, bedrock_embeddings):
-    return OpenSearchSemanticCacheCustom(
+    return OpenSearchSemanticCache(
         http_auth=auth,
         opensearch_url=get_semantic_cache_endpoint(),
         embedding=bedrock_embeddings,
@@ -655,141 +588,5 @@ def get_human_template():
 
 
 def get_instruction_template():
-    instruction = """
-        당신의 임무는 제공된 문서를 바탕으로, 문의에 정확하고 간결하게 답변.
-        제공된 문서나 정보가 없을 경우 아래의 규칙에 의해 답변
-
-        답변을 할때는 아래의 기준을 사용.
-        - 언어: 한국어로 답변
-        - 객관성: 당신의 개인적인 해석이나 판단을 배제
-        - 정확성: 날짜, 시간, 이름, 숫자, 장소 등의 구체적인 정보를 정확하게 발견하고 전달
-        - 정보보안: 이름, 성별, 나이, 개인의 주소와 같은 개인정보는 배제
-        - 완전성: 중요한 정보가 누락되지 않도록 주의
-        - 가독성: 모든 출력에서 적절한 띄어쓰기를 사용하
-        - 단순함: 존칭은 생략하고 정보만 전달
-        - 순서가 있는 동작이 포함된 답변은, 단계별로 라인을 구분하고, 순서를 표시 해 주세요. 
-        
-        제공된 정보가 없을 경우 아래 기준으로 답변.
-        - 제공된 정보가 없을 경우 '정보 없음' 으로만 답변
-        - 존칭, 사과, 상세 또는 부가 설명 금지
-    """
+    instruction = get_query_instruction()
     return instruction
-
-
-class OpenSearchSemanticCacheCustom(BaseCache):
-    """Cache that uses OpenSearch vector store backend"""
-
-    def __init__(
-            self, opensearch_url: str, embedding: Embeddings, score_threshold: float = 0.2, **kwargs: Any
-    ):
-        """
-        Args:
-            opensearch_url (str): URL to connect to OpenSearch.
-            embedding (Embedding): Embedding provider for semantic encoding and search.
-            score_threshold (float, 0.2):
-        Example:
-        .. code-block:: python
-            import langchain
-            from langchain.cache import OpenSearchSemanticCache
-            from langchain.embeddings import OpenAIEmbeddings
-            langchain.llm_cache = OpenSearchSemanticCache(
-                opensearch_url="http//localhost:9200",
-                embedding=OpenAIEmbeddings()
-            )
-        """
-        self._cache_dict: Dict[str, OpenSearchVectorStore] = {}
-        self.opensearch_url = opensearch_url
-        self.embedding = embedding
-        self.score_threshold = score_threshold
-        self.kwargs = kwargs
-
-    def _index_name(self, llm_string: str) -> str:
-        hashed_index = _hash(llm_string)
-        return f"cache_{hashed_index}"
-
-    def _get_llm_cache(self, llm_string: str) -> OpenSearchVectorStore:
-        index_name = self._index_name(llm_string)
-
-        # return vectorstore client for the specific llm string
-        if index_name in self._cache_dict:
-            return self._cache_dict[index_name]
-
-        # create new vectorstore client for the specific llm string
-        self._cache_dict[index_name] = OpenSearchVectorStore(
-            opensearch_url=self.opensearch_url,
-            index_name=index_name,
-            embedding_function=self.embedding,
-            **self.kwargs
-        )
-
-        # create index for the vectorstore
-        vectorstore = self._cache_dict[index_name]
-        if not vectorstore.index_exists():
-            _embedding = self.embedding.embed_query(text="test")
-            vectorstore.create_index(len(_embedding), index_name)
-        return vectorstore
-
-    def lookup(self, prompt: str, llm_string: str) -> Optional[RETURN_VAL_TYPE]:
-        """Look up based on prompt and llm_string."""
-        llm_cache = self._get_llm_cache(llm_string)
-        generations: List = []
-        # Read from a Hash
-        results = llm_cache.similarity_search(
-            query=prompt,
-            k=1,
-            score_threshold=self.score_threshold,
-        )
-        if results:
-            for document in results:
-                try:
-                    generations.extend(loads(document.metadata["return_val"]))
-                except Exception:
-                    print(
-                        "Retrieving a cache value that could not be deserialized "
-                        "properly. This is likely due to the cache being in an "
-                        "older format. Please recreate your cache to avoid this "
-                        "error."
-                    )
-
-                    generations.extend(
-                        _load_generations_from_json(document.metadata["return_val"])
-                    )
-        return generations if generations else None
-
-    def update(self, prompt: str, llm_string: str, return_val: RETURN_VAL_TYPE) -> None:
-        """Update cache based on prompt and llm_string."""
-        for gen in return_val:
-            if not isinstance(gen, Generation):
-                raise ValueError(
-                    "OpenSearchSemanticCache only supports caching of "
-                    f"normal LLM generations, got {type(gen)}"
-                )
-        llm_cache = self._get_llm_cache(llm_string)
-        metadata = {
-            "llm_string": llm_string,
-            "prompt": prompt,
-            "return_val": dumps([g for g in return_val]),
-        }
-        llm_cache.add_texts(texts=[prompt], metadatas=[metadata])
-
-    def clear(self, **kwargs: Any) -> None:
-        """Clear semantic cache for a given llm_string."""
-        index_name = self._index_name(kwargs["llm_string"])
-        if index_name in self._cache_dict:
-            self._cache_dict[index_name].delete_index(index_name=index_name)
-            del self._cache_dict[index_name]
-
-
-def _hash(_input: str) -> str:
-    """Use a deterministic hashing approach."""
-    return hashlib.md5(_input.encode()).hexdigest()
-
-
-def _load_generations_from_json(generations_json: str) -> RETURN_VAL_TYPE:
-    try:
-        results = json.loads(generations_json)
-        return [Generation(**generation_dict) for generation_dict in results]
-    except json.JSONDecodeError:
-        raise ValueError(
-            f"Could not decode json to list of generations: {generations_json}"
-        )
