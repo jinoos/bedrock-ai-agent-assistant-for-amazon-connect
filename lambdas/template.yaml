@@ -7,6 +7,11 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
+          default: Amazon Connect
+        Parameters:
+          - ConnectId
+          - LambdaSGs
+      - Label:
           default: Lambda & Api Gateway Settings
         Parameters:
           - LambdaSubnets
@@ -26,6 +31,9 @@ Metadata:
           - SemanticCacheVectorDBEndpoint
 
 Parameters:
+  ConnectId:
+    Type: String
+    Description: Instance Id for Amazon Connect
   LambdaSubnets:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Private Subnets for Lambda Function
@@ -133,6 +141,7 @@ Resources:
     Properties:
       TemplateURL: cfn/ssm.template
       Parameters:
+        ConnectId: !Ref ConnectId
         BedrockRegion: !Ref BedrockRegion
         BedrockModelId: !Ref BedrockModelId
         BedrockKnowledgeBaseId: !Ref BedrockKnowledgeBaseId

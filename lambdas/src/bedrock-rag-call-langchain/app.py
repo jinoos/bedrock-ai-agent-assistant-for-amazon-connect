@@ -139,6 +139,10 @@ def get_ddb_contact_summary():
     return get_param('/aaa/dynamodb_contact_summary')
 
 
+def get_query_instruction():
+    return get_param('/aaa/query_instruction')
+
+
 def get_hash(input_string):
     encoded_str = input_string.encode()
     sha256 = hashlib.sha256()
@@ -359,23 +363,7 @@ def get_human_template():
 
 
 def get_instruction_template():
-    instruction = """
-        당신의 임무는 제공된 문서를 바탕으로, 문의에 정확하고 간결하게 답변.
-        제공된 문서나 정보가 없을 경우 아래의 규칙에 의해 답변
-
-        답변을 할때는 아래의 기준을 사용.
-        - 언어: 한국어로 답변
-        - 객관성: 당신의 개인적인 해석이나 판단을 배제
-        - 정확성: 날짜, 시간, 이름, 숫자, 장소 등의 구체적인 정보를 정확하게 발견하고 전달
-        - 정보보안: 이름, 성별, 나이, 개인의 주소와 같은 개인정보는 배제
-        - 완전성: 중요한 정보가 누락되지 않도록 주의
-        - 가독성: 모든 출력에서 적절한 띄어쓰기를 사용하
-        - 단순함: 존칭은 생략하고 정보만 전달
-        - 순서가 있는 동작이 포함된 답변은, 단계별로 라인을 구분하고, 순서를 표시 해 주세요. 
-        제공된 정보가 없을 경우 아래 기준으로 답변.
-        - 제공된 정보가 없을 경우 '정보 없음' 으로만 답변
-        - 존칭, 사과, 상세 또는 부가 설명 금지
-    """
+    instruction = get_query_instruction()
     return instruction
 
 

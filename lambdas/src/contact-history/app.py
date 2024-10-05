@@ -43,7 +43,6 @@ logger = Logger()
 region = boto3.Session().region_name
 cors_config = CORSConfig(allow_origin="*")
 app = APIGatewayRestResolver(serializer=custom_serializer, cors=cors_config)
-instanceId = '79609c92-0c7b-4f3c-9845-3b8676198539'
 
 region_name = boto3.Session().region_name
 client = boto3.client('connect', region_name=region_name)
@@ -65,7 +64,7 @@ def main():
 @app.get("/contact-history/contact/<contactId>")
 def contact_info(contactId: str):
     res = client.describe_contact(
-        InstanceId=instanceId,
+        InstanceId=get_connect_id(),
         ContactId=contactId
     )
     return res
@@ -123,13 +122,11 @@ def get_analysis_data(contactId: str):
             continue
 
         while len(aiList) > 0 and aiDate < tranDate:
-            print(f"AI Message: -----------------")
             newTranscript.append(convert_ai_response_to_transcript(aiList.pop(0)))
             if len(aiList) == 0:
                 break
             aiDate = dateutil.parser.parse(aiList[0]['AnsweredDate'])
     for ai in aiList:
-        print(f"AI Message: -----------------")
         newTranscript.append(convert_ai_response_to_transcript(ai))
 
     print(f"Analysis Data: {newTranscript}")
@@ -241,7 +238,7 @@ def contact_history():
     endTime = datetime.datetime.utcnow()
     startTime = endTime - datetime.timedelta(days=30)
     contactList = client.search_contacts(
-        InstanceId=instanceId,
+        InstanceId=get_connect_id(),
         TimeRange={
             'Type': 'INITIATION_TIMESTAMP',
             'StartTime': startTime.isoformat(),
@@ -251,10 +248,6 @@ def contact_history():
             'FieldName': 'INITIATION_TIMESTAMP',
             'Order': 'DESCENDING'
         },
-        # Channels=[
-        #     'VOICE',
-        #     'CHAT'
-        # ],
         MaxResults=100
     )
 
@@ -312,74 +305,7 @@ def generateSummary():
     if query.strip() == "":
         return {"error": "query is empty"}
 
-    instruction = """
-        당신은 전화 상담원의 통화 기록을 분석하는 전문 분석가 입니다.
-        제공된 문의는 고객('CUSTOMER'), 상담원('AGENT'), 그리고 상담원을 돕는 AI('AI')가 나눈 대화 내용입니다.
-        
-        대화 내용은 JSON 형태로 제공됩니다. 
-        - Content: 대화내용
-        - ParticipantId: 대화자 구분
-        - Id: Json 고유키
-        - AbsoluteTime: 대화 발생 시간
-
-        아래 기준으로 대화 내용을 분석하고, "처리 기준", "개인 정보 처리 기준"을 바탕으로 정보를 정리
-        "응답 포멧" 대로 정보를 구성하여 Markdown 형식으로 응답
-        분석할 고객의 대화 내용이 없다면, 간략하 분석할 내용 없음으로 표시
-        고객이 제공한 개인정보 노출 금지!
-        고객이 요청한 변경 정보 상세 노출 금지!
-
-        처리 기준
-        - 언어: 한국어로 답변
-        - 객관성: 당신의 개인적인 해석이나 판단을 배제
-        - 개인정보보안: 이름, 나이, 주소, 전화번호, 카드번호, CVS코드, 비밀번호 등 개인 정보는 제거
-        - 정확성: 날짜, 시간, 이름, 숫자, 장소 등의 구체적인 정보를 정확하게 발견하고 전달
-        - 완전성: 중요한 정보가 누락되지 않도록 주의
-        - 가독성: 모든 출력에서 적절한 띄어쓰기를 사용
-        - 단순함: 존칭은 생략하고 정보만 전달
-        - 순서가 있는 동작이 포함된 답변은, 단계별로 라인을 구분하고, 순서를 표시 해 주세요. 
-        - 여러가지의 문제를 해결 했다면, 문제별로 조치내용을 구분지어 정리
-
-        개인 정보 처리 기준
-        - 대화 에서 개인 정보 제거
-        - 이름, 주소, 나이, 성별, 전화번호, 카드번호, CVC코드, 비밀번호는 절대 노출 불가
-        - 대화에서 이름 제거
-        - 대화에서 성명 제거
-        - 대화에서 주소 제거
-        - 대화에서 나이 제거
-        - 대화에서 성별 제거
-        - 대화에서 전화번호 제거
-        - 대화에서 전화 번호 제거
-        - 대화에서 카드번호 제거
-        - 대화에서 카드 번호 제거
-        - 대화에서 CVC 제거
-        - 대화에서 비밀번호 제거
-
-        정리 기준
-        - 고객과 상담원의 대화 내용을 중심으로 맥락을 파악합니다.
-        - AI의 대화내용은 상담원의 응답을 확장해 주는 용도입니다. 주된 내용에서는 빼주세요. 
-        - 순서있는 목록, 순서없는 목록, 문서 링크등 활용 가능 
-
-        <응답포멧>
-         ## 제목 (제목을 20자 이내로 요약)
-         ### 요약
-         (상담 내용을 100자 이내로 요약)
-
-         ### 고객의 문의 또는 문제
-         (고객이 현재 알고 싶어하는 내용이나 문제를 200자 이내로 요약)
-
-         ### 문제 해결 방법
-         (상담원과 고객의 대화를 바탕으로 문제 해결을 위한 설명이나 방법을 요약합니다. 500자 이내)
-
-         ### 해결되지 않은 문제
-         (고객의 처한 상황이나 문의 중 대화중에 해결되지 않은 궁금증이나 문제를 300자 이내로 정리)
-
-         ### 최종 고객 만족도
-         (상담이 끝나는 시점에 고객의 만족도와 상태를 30자 이내로 분석)
-
-         ### 키워드 리스트
-         (본 대외에서 키워드, Tag를 최소 2개~5개로 나열)
-        </응답포멧>
-    """
+    instruction = get_summary_instruction()
 
     param = LlmParam(
         query=body.get("query"),
@@ -490,6 +416,14 @@ def get_contact_id(event):
 
 
 def get_bedrock_region():
+    return ps_get('/aaa/connect_id')
+
+
+def get_summary_instruction():
+    return ps_get('/aaa/summary_instruction')
+
+
+def get_bedrock_region():
     return ps_get('/aaa/bedrock_region')
 
 
@@ -578,6 +512,10 @@ def deserialize(input_string):
     return json.loads(decoded.decode('UTF-8'))
 
 
+def get_connect_id():
+    return ps_get_bool('/aaa/connect_id')
+
+
 def get_semantic_cache_enabled():
     return ps_get_bool('/aaa/semantic_cache_enabled')
 
@@ -601,6 +539,9 @@ def get_ddb_llm_history():
 def get_ddb_contact_summary():
     return get_param('/aaa/dynamodb_contact_summary')
 
+
+def get_query_instruction():
+    return get_param('/aaa/query_instruction')
 
 
 def get_chain(model, prompt, retriever):
@@ -708,24 +649,7 @@ def get_human_template():
 
 
 def get_instruction_template():
-    instruction = """
-        당신의 임무는 제공된 문서를 바탕으로, 문의에 정확하고 간결하게 답변.
-        제공된 문서나 정보가 없을 경우 아래의 규칙에 의해 답변
-
-        답변을 할때는 아래의 기준을 사용.
-        - 언어: 한국어로 답변
-        - 객관성: 당신의 개인적인 해석이나 판단을 배제
-        - 정확성: 날짜, 시간, 이름, 숫자, 장소 등의 구체적인 정보를 정확하게 발견하고 전달
-        - 정보보안: 이름, 성별, 나이, 개인의 주소와 같은 개인정보는 배제
-        - 완전성: 중요한 정보가 누락되지 않도록 주의
-        - 가독성: 모든 출력에서 적절한 띄어쓰기를 사용하
-        - 단순함: 존칭은 생략하고 정보만 전달
-        - 순서가 있는 동작이 포함된 답변은, 단계별로 라인을 구분하고, 순서를 표시 해 주세요. 
-
-        제공된 정보가 없을 경우 아래 기준으로 답변.
-        - 제공된 정보가 없을 경우 '정보 없음' 으로만 답변
-        - 존칭, 사과, 상세 또는 부가 설명 금지
-    """
+    instruction = get_query_instruction()
     return instruction
 
 
