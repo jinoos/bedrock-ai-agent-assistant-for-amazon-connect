@@ -24,10 +24,6 @@ Metadata:
           - SemanticCacheEnable
           - SemanticCacheEmbeddingModelId
           - SemanticCacheVectorDBEndpoint
-      - Label:
-          default: Lambda Settings
-        Parameters:
-          - ApiGWName
 
 Parameters:
   LambdaSubnets:
@@ -36,10 +32,6 @@ Parameters:
   LambdaSGs:
     Type: List<AWS::EC2::SecurityGroup::Id>
     Description: Security Group for Lambda Function
-  ApiGWName:
-    Type: String
-    Description: Name for Api Gateway
-    Default: ai-agent-assistant
   BedrockRegion:
     Type: String
     Description: Bedrock Region
@@ -102,6 +94,7 @@ Parameters:
   SemanticCacheVectorDBEndpoint:
     Type: String
     Description: Semantic Cache VectorDB Endpoint (only for OpenSearch Serverless Endpoint)
+    Default: " "
 
 
 
