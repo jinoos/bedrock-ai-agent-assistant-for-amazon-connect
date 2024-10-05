@@ -31,7 +31,7 @@ npm install -D ts-loader html-webpack-plugin
 ### CFN Deploy
 ```shell
 aws cloudformation deploy \
-   --template-file ui.template \
+   --template-file template.yaml \
    --stack-name <CLOUDFORMATION-STACK-NAME> \
    --parameter-overrides "BucketName=<S3-BUCKET-NAME-UI-FILES>"
 ```
