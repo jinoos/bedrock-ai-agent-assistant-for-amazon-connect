@@ -13,7 +13,7 @@ Workspace에서 3P App이 효과적으로 동작하기 위해서는 Workspace에
 예를들면 현재 Workspace의 Agent 정보나, 고객 응대 시작/종료와 같은 정보를 바탕으로 좀더 Interactive한 기능을 구현할수 있습니다. "[TypeScrpt 기반 Workspace 개발자 가이드](https://docs.aws.amazon.com/ko_kr/agentworkspace/latest/devguide/what-is-service.html)"를 참고하세요.
 
 ## Prerequisites
-* 여기서 Node.js와 npm, Webpack에 대한 내용은 다루지 않겠습니다. [Node.js and npm](https://nodejs.org/) 참고
+* 여기서 Node.js, NPM, 그리고 Webpack에 대한 내용은 다루지 않습니다. [Node.js and npm](https://nodejs.org/) 참고
 * S3 + CloudFront를 이용한 정적 Web Service 구성은 [여기](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/getting-started-cloudfront-overview.html)를 참고
 * 필요한 패키지 설치
 ```shell
@@ -76,13 +76,6 @@ Install the dependencies:
 npm install 
 ```
 
-## Running the project
-Local 환경에서 실행, 동작 테스트를 합니다.
-아쉽게도 Local에서는 Workspace에서 Event를 수신할 수 없습니다.
-```shell
-npm start
-```
-
 ## Building & deploying with Webpack
 ```shell
 # build
@@ -91,6 +84,13 @@ npx webpack # Same with $ npm run build
 AWS S3 Sync를 통한 dist 파일 배포
 ```shell
 aws s3 sync ./dist/ s3://<YOUR-S3-BUCKET-NAME> --delete
+```
+
+## Running the project
+Local 환경에서 실행, 동작 테스트를 합니다.
+아쉽게도 Local에서는 Workspace에서 Event를 수신할 수 없습니다.
+```shell
+npm start
 ```
 
 ## Additional Information
