@@ -43,7 +43,6 @@ Thumbs.db
 /dist
 
 # TypeScript compiled output
-*.js
 *.js.map
 
 # Coverage directory used by tools like istanbul
