@@ -1,0 +1,214 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Bedrock Knowledge Base with OpenSearch Serverless and S3 Data Source'
+
+Parameters:
+  KnowledgeBaseName:
+    Type: String
+    Description: Name of the Bedrock Knowledge Base
+  OpenSearchCollectionName:
+    Type: String
+    Description: Name of the OpenSearch Serverless collection
+  S3BucketName:
+    Type: String
+    Description: Name of the existing S3 bucket
+  S3KeyPrefix:
+    Type: String
+    Description: Key prefix for the data source in S3 bucket
+
+Resources:
+  BedrockKnowledgeBase:
+    Type: AWS::Bedrock::KnowledgeBase
+    Properties:
+      Description: 'Knowledge Base for Bedrock'
+      Name: !Ref KnowledgeBaseName
+      RoleArn: !GetAtt BedrockKnowledgeBaseRole.Arn
+      KnowledgeBaseConfiguration:
+        Type: "VECTOR"
+        VectorKnowledgeBaseConfiguration:
+          EmbeddingModelArn: !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/amazon.titan-embed-text-v2:0"
+      StorageConfiguration:
+        Type: 'OPENSEARCH_SERVERLESS'
+        OpensearchServerlessConfiguration:
+          CollectionArn: !GetAtt OpenSearchServerlessCollection.Arn
+          VectorIndexName: "aaa-index"
+          FieldMapping:
+            VectorField: "vector"
+            TextField: "text"
+            MetadataField: "metadata"
+  S3DataSource:
+    Type: AWS::Bedrock::DataSource
+    Properties:
+      KnowledgeBaseId: !Ref BedrockKnowledgeBase
+      Name: "S3"
+      Description: "S3 DataSource"
+      DataSourceConfiguration:
+        Type: "S3"
+        S3Configuration:
+          BucketArn: !Sub "arn:aws:s3:::${S3BucketName}"
+          InclusionPrefixes:
+            - !Ref S3KeyPrefix
+
+  OpenSearchServerlessCollection:
+    Type: 'AWS::OpenSearchServerless::Collection'
+    Properties:
+      Name: !Ref OpenSearchCollectionName
+      Type: VECTORSEARCH
+      Description: Collection to holds vector search data
+    DependsOn: EncryptionPolicy
+
+  VectorIndexLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+
+          def handler(event, context):
+              client = boto3.client('opensearchserverless')
+              collection_name = event['ResourceProperties']['CollectionName']
+              index_name = event['ResourceProperties']['IndexName']
+              
+              try:
+                  if event['RequestType'] in ['Create', 'Update']:
+                      response = client.create_index(
+                          id=index_name,
+                          collectionName=collection_name,
+                          body=json.dumps({
+                              "mappings": {
+                                  "properties": {
+                                      "vector": {
+                                          "type": "knn_vector",
+                                          "dimension": 1536,
+                                          "method": {
+                                              "name": "hnsw",
+                                              "space_type": "l2",
+                                              "engine": "faiss"
+                                          }
+                                      }
+                                  }
+                              }
+                          })
+                      )
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {'IndexArn': response['indexArn']})
+                  elif event['RequestType'] == 'Delete':
+                      client.delete_index(id=index_name, collectionName=collection_name)
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+      Runtime: python3.8
+
+  VectorIndexCustomResource:
+    Type: Custom::VectorIndex
+    Properties:
+      ServiceToken: !GetAtt VectorIndexLambda.Arn
+      CollectionName: !Ref OpenSearchServerlessCollection
+      IndexName: aaa-index
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: OpenSearchAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'aoss:CreateIndex'
+                  - 'aoss:DeleteIndex'
+                Resource: '*'
+
+  BedrockKnowledgeBaseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BedrockKnowledgeBasePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:ListCustomModels
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/*
+              - Effect: Allow
+                Action:
+                  - 's3:Get*'
+                  - 's3:List*'
+                  - 's3:Describe*'
+                  - 's3-object-lambda:Get*'
+                  - 's3-object-lambda:List*'
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3BucketName}'
+                  - !Sub 'arn:aws:s3:::${S3BucketName}/*'
+              - Effect: Allow
+                Action:
+                  - 'aoss:APIAccessAll'
+                Resource:
+                  - !Sub "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/*"
+  DataAccessPolicy:
+    Type: 'AWS::OpenSearchServerless::AccessPolicy'
+    Properties:
+      Name: !Join
+      - '-'
+      - - !Ref OpenSearchCollectionName
+        - acc-policy
+      Type: data
+      Description: Access policy for AOSS collection
+      Policy: !Sub >-
+        [{"Description":"Access for cfn user","Rules":[{"ResourceType":"index","Resource":["index/*/*"],"Permission":["aoss:*"]},
+        {"ResourceType":"collection","Resource":["collection/quickstart"],"Permission":["aoss:*"]}],
+        "Principal":["arn:aws:iam::${AWS::AccountId}:root", "${BedrockKnowledgeBaseRole.Arn}"]}]
+  NetworkPolicy:
+    Type: 'AWS::OpenSearchServerless::SecurityPolicy'
+    Properties:
+      Name: !Join
+      - '-'
+      - - !Ref OpenSearchCollectionName
+        - net-policy
+      Type: network
+      Description: Network policy for AOSS collection
+      Policy: !Sub >-
+        [{"Rules":[{"ResourceType":"collection","Resource":["collection/${OpenSearchCollectionName}"]}, {"ResourceType":"dashboard","Resource":["collection/${OpenSearchCollectionName}"]}],"AllowFromPublic":true}]
+  EncryptionPolicy:
+    Type: 'AWS::OpenSearchServerless::SecurityPolicy'
+    Properties:
+      Name: !Join
+      - '-'
+      - - !Ref OpenSearchCollectionName
+        - sec-policy
+      Type: encryption
+      Description: Encryption policy for AOSS collection
+      Policy: !Sub >-
+        {"Rules":[{"ResourceType":"collection","Resource":["collection/${OpenSearchCollectionName}"]}],"AWSOwnedKey":true}
+
+Outputs:
+  KnowledgeBaseId:
+    Description: 'ID of the created Bedrock Knowledge Base'
+    Value: !Ref BedrockKnowledgeBase
+  OpenSearchCollectionId:
+    Description: 'ID of the created OpenSearch Serverless Collection'
+    Value: !Ref OpenSearchServerlessCollection

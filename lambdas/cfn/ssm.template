@@ -34,7 +34,7 @@ Parameters:
   SemanticCacheVectorDBEndpoint:
     Type: String
     Description: Semantic Cache Vector DB Endpoint (only allow OpenSearch Serverless)
-    Default: SemanticCacheVectorDBEndpoint
+    Default: 'None'
   SemanticCacheEmbeddingModelId:
     Type: String
     Description: Semantic Cache Embedding Model Id

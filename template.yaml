@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  CloudFormation stack for Ai Agent Assistant
+
+Parameters:
+  KnowledgeBaseName:
+    Type: String
+    Description: Name of the Bedrock Knowledge Base
+  OpenSearchCollectionName:
+    Type: String
+    Description: Name of the OpenSearch Serverless collection
+  S3BucketName:
+    Type: String
+    Description: Name of the existing S3 bucket
+  S3KeyPrefix:
+    Type: String
+    Description: Key prefix for the data source in S3 bucket
+
+Resources:
+  Rag:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: knowledgebase/template.yaml
+      Parameters:
+
+  Lambdas:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lambdas/template.yaml
+
+  Ui:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ui/template.yaml
+
+
+
+
+
+Outputs:

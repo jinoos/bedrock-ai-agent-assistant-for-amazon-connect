@@ -2,18 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description:
   Stacks for UI
 
-# ------------------------------------------------------------#
-# Parameters
-# ------------------------------------------------------------#
-Parameters:
-  BucketName:
-    Type: String
-    Default: "S3 Bucket Name"
-#
-#  ACMSSL:
-#    Type: String
-#    Default: "ACM Identifier"
-
 Resources:
 # ------------------------------------------------------------#
 #  S3 Bucket
@@ -23,7 +11,10 @@ Resources:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Ref BucketName
+      BucketName: !Join
+        - '-'
+        - - 'aaa-ui'
+          - !Select [2, !Split ['/', !Ref AWS::StackId]]
       AccessControl: Private
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -63,11 +54,11 @@ Resources:
       DistributionConfig:
         Origins:
         - DomainName: !GetAtt Bucket.RegionalDomainName
-          Id: !Sub "S3origin-${BucketName}"
+          Id: !Sub "S3origin-${Bucket}"
           S3OriginConfig:
             OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
         DefaultCacheBehavior:
-          TargetOriginId: !Sub "S3origin-${BucketName}"
+          TargetOriginId: !Sub "S3origin-${Bucket}"
           ViewerProtocolPolicy: allow-all
           AllowedMethods:
           - GET
@@ -93,4 +84,4 @@ Outputs:
     Value: !GetAtt CloudFrontDistribution.DomainName
   Bucket:
     Description: "Bucket Name"
-    Value: !Ref BucketName
+    Value: !Ref Bucket

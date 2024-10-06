@@ -109,7 +109,7 @@ Parameters:
   SemanticCacheVectorDBEndpoint:
     Type: String
     Description: Semantic Cache VectorDB Endpoint (only for OpenSearch Serverless Endpoint)
-    Default: " "
+    Default: 'None'
 
 
 
@@ -149,6 +149,8 @@ Resources:
       TemplateURL: cfn/ssm.template
       Parameters:
         ConnectId: !Ref ConnectId
+        SummaryBucketName: !Ref SummaryBucketName
+        SummaryBucketPrefix: !Ref SummaryBucketPrefix
         BedrockRegion: !Ref BedrockRegion
         BedrockModelId: !Ref BedrockModelId
         BedrockKnowledgeBaseId: !Ref BedrockKnowledgeBaseId
