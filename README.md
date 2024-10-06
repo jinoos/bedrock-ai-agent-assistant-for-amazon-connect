@@ -34,7 +34,6 @@ Front-end Action을 위한 Back-end는 [AWS Lambda](https://aws.amazon.com/ko/la
 ## Prerequisites
 
 `AAA` 설치를 위해서 사전 준비되어야 할 것.
-
 - Amazon Connect와 Contact Lens 설정
 - Knowledge Base와 통화 요약을 위한 S3 Bucket
 - Bedrock FM모델 Access 권한 획득
@@ -148,6 +147,7 @@ Embedding을 위한 FM Model을 선택하는 화면입니다.
 - Back-end를 위한 Lambda Stack 설치 (`Lambda`, `API Gateway`, `DynamoDB`, `SSM`)
 - Front-end를 위한 Lambda Stack 설치 (`S3`, `CloudFront`)
 - Front-end 코드 배포
+- Amazon Connect에 3P App 활성화
 
 ### Install Lambda Stack
 
@@ -329,6 +329,69 @@ $ aws s3 sync ./dist/ s3://aaa-ui-81c4d0c0-83ea-11ef-8a4c-*********** --delete
 이제 UI 준비는 끝났습니다. 
 
 ### Setup 3P App in Amazon Connect
+`Aamzon Connect`에 `3P App`을 활성화 하기 위해서는 다음과 같은 작업이 필요합니다. 
+- `Aamazon Connect`에 3P App 등록하기 (`AWS Console`)
+- 고객센터 설정에서 프로파일별 3P App 권한 부여
+- `Agent Workspace`에서 최종 확인
 
+**AWS Connect에 3P App 등록하기 (AWS Console)**
+먼저 [`Connect Console`](https://ap-northeast-2.console.aws.amazon.com/connect/v2/app/instances?region=ap-northeast-2)에 접속하여 `Third-party Application` 설정으로 들어갑니다.
 
-###
+![Connect 1](connect/images/connect-1.png)
+
+새로운 App Application 등록 절차를 시작합니다.
+
+![Connect 2](connect/images/connect-2.png)
+
+`Display name`과 `Namespace`를 원하는 값으로 설정하고,
+`Access URL`에 `UI Stack`에서 생성한 `CloudFront Endpoint`를 넣습니다.
+> **Important** 이때 `/index.html`을 포함하여야 합니다.
+- Example: https://***********.cloudfront.net/index.html
+
+![Connect 3](connect/images/connect-3.png)
+
+하단에 Instance association에 이미 만들어져 있는 Connect Instance를 선택하고, `Add application` 합니다.
+
+![Connect 4](connect/images/connect-4.png)
+
+`Access information`의 링크를 통해 고객센터 관리 Console로 접속합니다.
+Connect는 멀티테넌트로 구성되어, 고객센터 권한별 별도의 관리환경을 제공합니다.
+링크를 통해 해당 고객센터 관리환경으로 접속합니다.
+
+![Connect 5](connect/images/connect-5.png)
+![Connect 6](connect/images/connect-6.png)
+
+고객센터 관리 환경에 접속할 때, ID/PW 입력과 같은 인증 절차가 있을 수 있습니다.
+Instance 생성 초기에 설정한 관리자 ID와 PW를 활용합니다. 
+
+**고객센터 설정에서 프로파일별 3P App 권한 부여**
+
+Connect의 계정은 하나 이상의 Profile에 속할수 있으며, Profile 별로 기능과 권한을 관리합니다. 
+
+왼쪽 메뉴의 `User` > `Security profiles`로 권한 관리 메뉴로 진입 힙니다.
+
+![Connect 7](connect/images/connect-7.png)
+
+등록된 Admin 프로파일로 진입하여, 하단 `에이전트 애플리케이션`의 폴더를 열면 등록한 `3P App`을 볼수 있으며,
+`AiAgentAssistant`의 액세스 권한을 설정하고 저장합니다.
+
+> 원하는 Profile 모두 위 등록 작업을 진행합니다.
+
+![Connect 8](connect/images/connect-8.png)
+![Connect 9](connect/images/connect-9.png)
+
+**`Agent Workspace`에서 최종 확인**
+
+이제 상담사가 사용하는 Agent Workspac는 상단의 링크를 통해 진입이 가능 합니다.
+
+![Connect 12](connect/images/connect-12.png)
+
+Agent Workspace 화면에서 3P App 활성화는 상단 오른편의 Drop Down 메뉴에서 가능 합니다.
+
+![Connect 11](connect/images/connect-11.png)
+
+Agent Workspace에서 활성화된 AAA의 최종 화면입니다. 상담중에 고객의 
+
+![Connect 10](connect/images/connect-10.png)
+
+## AAA 메뉴 - TBD
