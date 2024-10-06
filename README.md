@@ -321,11 +321,14 @@ $ ls -la dist
 ```
 
 생성된 파일을 UI Stack에서 생성한 S3 위치에 배포합니다.
-
+UI Stack에서 생성한 S3 Bucket Name으로 변경하여 실행합니다.
 ```shell
-$ aws s3 sync ./dist/ s3://<YOUR-S3-BUCKET-NAME> --delete
+#$ aws s3 sync ./dist/ s3://<YOUR-S3-BUCKET-NAME> --delete
+$ aws s3 sync ./dist/ s3://aaa-ui-81c4d0c0-83ea-11ef-8a4c-*********** --delete
 ```
+이제 UI 준비는 끝났습니다. 
 
-### 
+### Setup 3P App in Amazon Connect
+
 
 ###
