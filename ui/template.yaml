@@ -6,7 +6,6 @@ Resources:
 # ------------------------------------------------------------#
 #  S3 Bucket
 # ------------------------------------------------------------#
-# Bucket
   Bucket:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
@@ -25,9 +24,13 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
       Tags:
         - Key: Project
           Value: AiAgentAssistant
+
   BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -35,19 +38,27 @@ Resources:
       PolicyDocument:
         Statement:
         - Action: "s3:GetObject"
+          Sid: AllowCloudFrontServicePrincipalReadOnly
           Effect: Allow
           Resource: !Sub "arn:aws:s3:::${Bucket}/*"
           Principal:
-            CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+            Service: cloudfront.amazonaws.com
+          Condition:
+            StringEquals:
+              AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
 
 # ------------------------------------------------------------#
 #  CloudFront
 # ------------------------------------------------------------#
-  CloudFrontOriginAccessIdentity:
-    Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
+  CloudFrontOriginAccessControl:
+    Type: 'AWS::CloudFront::OriginAccessControl'
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub "access-identity-${Bucket}"
+      OriginAccessControlConfig:
+        Name: !Sub "OAC-${AWS::StackName}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
   CloudFrontDistribution:
     Type: "AWS::CloudFront::Distribution"
     Properties:
@@ -55,11 +66,11 @@ Resources:
         Origins:
         - DomainName: !GetAtt Bucket.RegionalDomainName
           Id: !Sub "S3origin-${Bucket}"
-          S3OriginConfig:
-            OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+          OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+          S3OriginConfig: {}
         DefaultCacheBehavior:
           TargetOriginId: !Sub "S3origin-${Bucket}"
-          ViewerProtocolPolicy: allow-all
+          ViewerProtocolPolicy: redirect-to-https
           AllowedMethods:
           - GET
           - HEAD
@@ -68,10 +79,6 @@ Resources:
             Cookies:
               Forward: none
             QueryString: false
-#        ViewerCertificate:
-#          SslSupportMethod: sni-only
-#          MinimumProtocolVersion: TLSv1.2_2021
-#          AcmCertificateArn: !Sub "arn:aws:acm:us-east-1:${AWS::AccountId}:certificate/${ACMSSL}"
         HttpVersion: http2
         Enabled: true
       Tags:
