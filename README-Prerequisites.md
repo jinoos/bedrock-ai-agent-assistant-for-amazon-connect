@@ -25,7 +25,7 @@ $ aws connect list-instances \
 
 > `CONTACT-ALIAS`는 자신의 Connect Alias로 변경
 
-## Get FM Access Grant
+## Obtain access permission of Foundation Models
 
 Bedrock을 이용하기 위해서 제공되는 `Foundation Model(FM)`의 Access 권한을 획득 해야 합니다.
 

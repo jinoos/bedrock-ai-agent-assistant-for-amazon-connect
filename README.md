@@ -1,4 +1,4 @@
-# Ai agent assistant for Amazon Connect with Bedrock
+# Ai agent assistant for Amazon Connect(with Bedrock)
 
 ## Ai Agent Assistant
 
