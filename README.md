@@ -54,3 +54,10 @@ Front-end Action을 위한 Back-end는 [AWS Lambda](https://aws.amazon.com/ko/la
 **[README-Installation](README-installation.md)**
 
 ## Features - TBD
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for the full license text.
+
+MIT License
+
+Copyright (c) 2024 Jinoos Lee
